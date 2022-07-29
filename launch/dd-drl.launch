@@ -10,7 +10,8 @@
 
   <!-- startup simulated world -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find drl_can)/worlds/simple_world.world"/>
+    <!-- <arg name="world_name" value="$(find drl_can)/worlds/simple_world.world"/> -->
+    <arg name="world_name" value="$(find drl_can)/worlds/blank_world.world"/>
     <arg name="paused" value="$(arg paused)"/>
     <arg name="gui" value="$(arg gui)"/>
     <arg name="use_sim_time" value="$(arg use_sim_time)"/>
@@ -43,6 +44,6 @@
   <include file="$(find turtlebot3_manipulation_gazebo)/launch/turtlebot3_manipulation_controller.launch"/>
 
   <!-- run RL experiment -->
-<!--   <node name="dd_drl" pkg="drl_can" type="main.py" respawn="false" output="screen"/> -->
+  <node name="dd_drl" pkg="drl_can" type="main.py" respawn="false" output="screen" args="$(arg coke_no_init)"/>
 
 </launch>

@@ -17,6 +17,8 @@ from gazebo_msgs.srv import GetModelState
 from gazebo_msgs.msg import ModelState 
 from gazebo_msgs.srv import SetModelState
 
+import sys
+
 class RobotRL(object):
 
     def __init__(self, coke_no):
@@ -26,15 +28,19 @@ class RobotRL(object):
         # Ros service for getting model states
         self.model_coordinates=rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
 
-        ## Number of coke cans
+        ## Number of coke cans; setting up naming convention
         self.coke_no=coke_no
+        self.coke_list=[]
+        for i in np.arange(1,coke_no+1):
+            coke="coke_"+str(i)
+            self.coke_list.append(coke)
 
         # Network
         # num_inputs = 480*640*3
         num_actions = 5 # linear x mu, angular z mu, linear x var, angular z var, x&z covar
         num_hidden = 128
         # inputs = layers.Input(shape=(480,640,3,))
-        inputs = layers.Input(shape=(480,400,3,))
+        inputs = layers.Input(shape=(350,640,3,))
         hl_1 = layers.Conv2D(32, 8, activation="relu")(inputs)
         hl_2 = layers.Conv2D(16, 4, activation="relu")(hl_1)
         hl_flatten=layers.Flatten()(hl_2)
@@ -75,6 +81,11 @@ class RobotRL(object):
         self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
         self.state_publish=rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
 
+        ## Initial reset of world to randomise coke can positions
+        self.resetWorld()
+
+        print("initialised")
+
     def gms_client(self,model_name,relative_entity_name):
         rospy.wait_for_service('/gazebo/get_model_state')
         try:
@@ -84,10 +95,9 @@ class RobotRL(object):
         except rospy.ServiceException as e:
             print("Service call failed: %s"%e)
 
-
     def imageSub(self, data):
         # Convert image to state for DRL-network
-        self.image = self.br.imgmsg_to_cv2(data)[:,120:520]/255.0
+        self.image = self.br.imgmsg_to_cv2(data)[40:390,:]/255.0
         # cv2.imshow('image',self.image)
         # cv2.waitKey(1)
         with tf.GradientTape() as tape:
@@ -155,13 +165,19 @@ class RobotRL(object):
 
             # Get reward
             # Reward is distance between coke and robot optimal is 0.2 distance
-            # pos_coke=self.getCoke("coke_test").pose.position
-            # pos_coke=self.model_coordinates("coke_test", "link").pose.position
-            # pos_robot=self.model_coordinates("robot", "link2").pose.position
-            pos_coke=self.gms_client("coke_test","link").pose.position
+            ## Assumption: always at least one coke can
+            pos_coke=self.gms_client("coke_1","link").pose.position
             pos_robot=self.gms_client("robot", "").pose.position
-            reward=1.0/((np.sqrt((pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2)-0.3)**2+1e-2)
-            print(reward)
+            dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
+            for i in self.coke_list[1:-1]:
+                pos_coke_temp=self.gms_client(i,"link").pose.position
+                dist_temp=(pos_coke_temp.x-pos_robot.x)**2+(pos_coke_temp.y-pos_robot.y)**2
+                if dist_temp<dist:
+                    dist=dist_temp
+                    pos_coke=pos_coke_temp
+        
+            reward=1.0/((np.sqrt(dist)-0.3)**2+1e-2)
+        
             # print(pos_robot.x, pos_robot.y, pos_coke.x, pos_coke.y, reward)
             self.rewards_history.append(reward)
 
@@ -226,7 +242,7 @@ class RobotRL(object):
                 self.episode=0
             else:
                 self.episode=self.episode+1
-            if self.total_eps==50:
+            if self.total_eps==250:
                 self.total_eps=0
                 self.resetWorld()
             else:
@@ -249,29 +265,16 @@ class RobotRL(object):
         # coke_pub=rospy.Publisher("/gazebo_set_model_state", int,queue_size=1)
         # reset_world = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
         reset_world()
-        self.smsClient("coke_test", [0.5,0.5])
+
+        ## Dimension is 10x10 ([[-5:5],[-5:5]]) arena (harcoded for now)
+        ## Make coke spawn area smaller; easier for camera to see
+        for i in self.coke_list:
+            self.smsClient(i, (1-2*np.random.random(2))*3)
 
     def getCoke(self, name):
         model_coordinates = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
         # print(model_coordinates(name, "link"))
         return model_coordinates(name, "link")
-
-
-    # def set_model_pose(self, cls, model_name, new_pose, model_reference_frame='world'):
-    #     """
-    #     Set the gazebo model's pose
-    #     :param model_name: str
-    #                 the name of new model
-    #     :param new_pose: geometry_msgs.msg.Pose
-    #                 the pose of new model
-    #     :param model_reference_frame: str
-    #                 the reference frame name(e.g. 'world')
-    #     """
-    #     msg = ModelState()
-    #     msg.model_name = model_name
-    #     msg.pose = new_pose
-    #     msg.reference_frame = model_reference_frame
-    #     cls.set_model_pose_pub.publish(msg) 
 
     def smsClient(self, model_name, pos):
         state_msg = ModelState()
@@ -293,6 +296,7 @@ class RobotRL(object):
             print("Service call failed: %s" % e)
 
 if __name__=='__main__':
+    coke_no=int(sys.argv[1])
     rospy.init_node("robotRL", anonymous=True)
     robot=RobotRL(coke_no)
     robot.start()
