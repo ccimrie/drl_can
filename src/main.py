@@ -14,15 +14,20 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
 from gazebo_msgs.srv import GetModelState
+from gazebo_msgs.msg import ModelState 
+from gazebo_msgs.srv import SetModelState
 
 class RobotRL(object):
 
-    def __init__(self):
+    def __init__(self, coke_no):
         self.loop_rate = rospy.Rate(1)
         self.br = CvBridge()
 
         # Ros service for getting model states
         self.model_coordinates=rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+
+        ## Number of coke cans
+        self.coke_no=coke_no
 
         # Network
         # num_inputs = 480*640*3
@@ -68,6 +73,7 @@ class RobotRL(object):
 
         # Publishers
         self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
+        self.state_publish=rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
 
     def gms_client(self,model_name,relative_entity_name):
         rospy.wait_for_service('/gazebo/get_model_state')
@@ -240,17 +246,53 @@ class RobotRL(object):
         reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
 
         ## Reset coke position
-        coke_pub=rospy.Publisher("/gazebo_set_model_state", int,queue_size=1)
-
+        # coke_pub=rospy.Publisher("/gazebo_set_model_state", int,queue_size=1)
         # reset_world = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
         reset_world()
+        self.smsClient("coke_test", [0.5,0.5])
 
     def getCoke(self, name):
         model_coordinates = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
         # print(model_coordinates(name, "link"))
         return model_coordinates(name, "link")
 
+
+    # def set_model_pose(self, cls, model_name, new_pose, model_reference_frame='world'):
+    #     """
+    #     Set the gazebo model's pose
+    #     :param model_name: str
+    #                 the name of new model
+    #     :param new_pose: geometry_msgs.msg.Pose
+    #                 the pose of new model
+    #     :param model_reference_frame: str
+    #                 the reference frame name(e.g. 'world')
+    #     """
+    #     msg = ModelState()
+    #     msg.model_name = model_name
+    #     msg.pose = new_pose
+    #     msg.reference_frame = model_reference_frame
+    #     cls.set_model_pose_pub.publish(msg) 
+
+    def smsClient(self, model_name, pos):
+        state_msg = ModelState()
+        state_msg.model_name = model_name
+        state_msg.pose.position.x = pos[0]
+        state_msg.pose.position.y = pos[1]
+        state_msg.pose.position.z = 0.0
+        state_msg.pose.orientation.x = 0
+        state_msg.pose.orientation.y = 0
+        state_msg.pose.orientation.z = 0
+        state_msg.pose.orientation.w = 0
+
+        rospy.wait_for_service('/gazebo/set_model_state')
+        try:
+            set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+            resp = set_state( state_msg )
+
+        except rospy.ServiceException as e:
+            print("Service call failed: %s" % e)
+
 if __name__=='__main__':
     rospy.init_node("robotRL", anonymous=True)
-    robot=RobotRL()
+    robot=RobotRL(coke_no)
     robot.start()
