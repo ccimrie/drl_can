@@ -12,11 +12,16 @@ from tensorflow.keras import layers
 
 from std_srvs.srv import Empty
 from std_msgs.msg import String
+from std_msgs.msg import Float64MultiArray
+from sensor_msgs.msg import JointState 
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
 from gazebo_msgs.srv import GetModelState
 from gazebo_msgs.msg import ModelState 
 from gazebo_msgs.srv import SetModelState
+
+import moveit_commander
+import moveit_msgs.msg
 
 import sys
 import os
@@ -41,10 +46,10 @@ class RobotRL(object):
         # num_inputs = 480*640*3
         ## Check if a model is already created
         path=os.environ["MODEL_PATH"]
-        if os.path.exists(path+"model6.h5"):
-            self.rlDNN=keras.models.load_model(path+"model.h5")
+        if os.path.exists(path+"model_grab.h5asdf"):
+            self.rlDNN=keras.models.load_model(path+"model_grab.h5")
         else:
-            num_actions = 5 # linear x mu, angular z mu, linear x var, angular z var, x&z covar
+            num_actions = 4 # linear x mu, angular z mu, linear x var, angular z var; no x&z covar or grab
             num_hidden = 128
             # inputs = layers.Input(shape=(480,640,3,))
             inputs = layers.Input(shape=(350,640,3,))
@@ -75,25 +80,51 @@ class RobotRL(object):
         self.current_vel=[0,0,0]
         self.joints=[0,0,0,0]
         self.total_eps=0
-        self.max_eps=250
+        self.max_eps=150
         self.learn_ep=10
+
+        self.robot = moveit_commander.RobotCommander()
+        self.scene = moveit_commander.PlanningSceneInterface()
+        self.arm_group = moveit_commander.MoveGroupCommander("arm")
+        self.gripper_group = moveit_commander.MoveGroupCommander("gripper")
+        # print(self.arm_group.get_current_joint_angles())
+        names1 = 'position1'
+        values1 = [1.0,0.4,-0.3,0.0]
+
+        self.arm_group.remember_joint_values(names1, values1)
+        # self.arm_group.remember_joint_values(names2, values2)
+
+        self.move_position1()
 
         # Subscribers
         ##   Subscribe vision (image from camera)
-        rospy.Subscriber("/camera/rgb/image_raw", Image, self.imageSub)
+        # rospy.Subscriber("/camera/rgb/image_raw", Image, self.imageSub)
 
-        ##   Subscribe robot state(current velocity, and arm state)
-        # rospy.Subscriber("/cmd_vel", Twist, self.velSub)
-        # rospy.Subscriber("/arm_controller/state", , self.velSub)
+        # ##   Subscribe robot state(current velocity, and arm state)
+        # # rospy.Subscriber("/cmd_vel", Twist, self.velSub)
+        # # rospy.Subscriber("/arm_controller/state", , self.velSub)
 
-        # Publishers
-        self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
-        self.state_publish=rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
+        # # Publishers
+        # self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
+        # self.state_publish=rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
 
-        ## Initial reset of world to randomise coke can positions
-        self.resetWorld()
+        # ## Initial reset of world to randomise coke can positions
+        # # self.resetWorld()
+        # self.move_arm()
+        # time.sleep(5)
+        # print("initialised")
 
-        print("initialised")
+    def move_position1(self):
+        self.arm_group.set_named_target("position1")
+        print("Executing Move: Position1")
+        plan1 = self.arm_group.plan()
+        self.arm_group.execute(plan1, wait=True)
+        self.arm_group.stop()
+        self.arm_group.clear_pose_targets()
+        variable = self.arm_group.get_current_pose()
+        print (variable.pose)
+        rospy.sleep(1)
+
 
     def gms_client(self,model_name,relative_entity_name):
         rospy.wait_for_service('/gazebo/get_model_state')
@@ -107,8 +138,8 @@ class RobotRL(object):
     def imageSub(self, data):
         # Convert image to state for DRL-network
         self.image = self.br.imgmsg_to_cv2(data)[40:390,:]/255.0
-        # cv2.imshow('image',self.image)
-        # cv2.waitKey(1)
+        cv2.imshow('image',self.image)
+        cv2.waitKey(1)
         with tf.GradientTape() as tape:
             state = tf.convert_to_tensor(self.image)#.reshape(480*640*3))#(-1,480,640,3))
             state=tf.expand_dims(state,0)
@@ -117,7 +148,11 @@ class RobotRL(object):
             # from environment state
             act_probs, critic_value = self.rlDNN(state)
             action_probs=np.squeeze(act_probs[0])
-            # print(action_probs)
+            
+            ## Check if a grab or move action:
+            p=np.random.random()
+            twist_vel=Twist()
+            grab=0
             # Send velocity to robot
             x_mu=(2*action_probs[0]-1)
             x_var=action_probs[1]
@@ -125,19 +160,32 @@ class RobotRL(object):
             az_mu=(2*action_probs[2]-1)
             az_var=action_probs[3]
 
-            rho_var=action_probs[4]
-            azx_var=rho_var*np.sqrt(x_var)*np.sqrt(az_var)
+            ## Ignore off-diagonals in covar matrix?
+            # rho_var=action_probs[4]
+            ## azx_var cannot be greatest var
+            # azx_var=rho_var*np.sqrt(x_var)*np.sqrt(az_var)
+            azx_var=0.0
 
             twist_vel=Twist()
             mu=np.array([x_mu,az_mu])
             sigma=np.array([[x_var,azx_var],[azx_var,az_var]])
 
             act=np.random.multivariate_normal(mu,sigma)
-            twist_vel.linear.x=act[0]*0.05
-            twist_vel.angular.z=act[1]*0.05
-            self.vel_pub.publish(twist_vel)
-            time.sleep(0.05)
-            
+
+            ## Grab if speed is less than 0.01?
+            print('\n\n',act[0],act[1])
+            if np.abs(act[0])>0.1 and np.abs(act[1])>0.1:
+                twist_vel.linear.x=act[0]*0.05
+                twist_vel.angular.z=act[1]*0.01
+                self.vel_pub.publish(twist_vel)
+                time.sleep(0.1)
+            else:
+                twist_vel.linear.x=0.0
+                twist_vel.angular.z=0.0
+                self.vel_pub.publish(twist_vel)
+                self.move_arm()
+                grab=1
+
             # Record outcome
             self.critic_value_history.append(critic_value[0, 0])
             p_act_denom=1.0/np.sqrt(np.linalg.det(2*np.pi*sigma)+self.eps)
@@ -151,15 +199,22 @@ class RobotRL(object):
             pos_coke=self.gms_client("coke_1","link").pose.position
             pos_robot=self.gms_client("robot", "").pose.position
             dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
-            for i in self.coke_list[1:-1]:
-                pos_coke_temp=self.gms_client(i,"link").pose.position
-                dist_temp=(pos_coke_temp.x-pos_robot.x)**2+(pos_coke_temp.y-pos_robot.y)**2
-                if dist_temp<dist:
-                    dist=dist_temp
-                    pos_coke=pos_coke_temp
+            # for i in self.coke_list[1:-1]:
+            #     pos_coke_temp=self.gms_client(i,"link").pose.position
+            #     dist_temp=(pos_coke_temp.x-pos_robot.x)**2+(pos_coke_temp.y-pos_robot.y)**2
+            #     if dist_temp<dist:
+            #         dist=dist_temp
+            #         pos_coke=pos_coke_temp
         
-            reward=1.0/((np.sqrt(dist)-0.3)**2+1e-2)
-        
+            reward=1.0/((np.sqrt(dist)-0.3)**2+1e-1)
+            if reward<0:
+                print(dist)
+            # reward=0
+            if grab and pos_coke.z>0:
+                reward=reward+100
+            elif grab:
+                reward=reward-100
+            print(reward)
             self.rewards_history.append(reward)
 
             # After fixed episode length learn
@@ -216,11 +271,11 @@ class RobotRL(object):
                 self.episode=self.episode+1
             if self.total_eps==self.max_eps:
                 self.total_eps=0
-                path=os.environ["MODEL_PATH"]
-                if path=="":
-                    print("No path defined, model not saved")
-                else:
-                    self.rlDNN.save(path+"model.h5")
+                # path=os.environ["MODEL_PATH"]
+                # if path=="":
+                    # print("No path defined, model not saved")
+                # else:
+                    # self.rlDNN.save(path+"model_grab.h5")
                 self.resetWorld()
             else:
                 self.total_eps=self.total_eps+1
@@ -228,6 +283,39 @@ class RobotRL(object):
     def velSub(self, data):
         self.current_vel=data
         print(self.current_vel)
+
+    ## Function to prevent arm going out of bounds and damaging servos
+    def clean_joint_states(self, data): 
+        lower_limits = [0, 0, -1.57, -1.57, -1.57, -1] 
+        upper_limits = [0, 0,  1.57,  1.57,  1.57, 1.57] 
+        clean_lower = np.maximum(lower_limits,data) 
+        clean_upper = np.minimum(clean_lower,upper_limits) 
+        return list(clean_upper) 
+
+    # processes the data from the ROSTopic named "joint_states"
+    # def joint_callback(self,data): 
+    #     print(data.position)
+    #     print("Msg: {}".format(data.header.seq)) 
+    #     print("Wheel Positions:\n\tLeft: {0:.2f}rad\n\tRight: {0:.2f}rad\n\n".format(data.position[0],data.position[1])) 
+    #     print("Joint Positions:\n\tShoulder1: {0:.2f}rad\n\tShoulder2: {0:.2f}rad\n\tElbow: {0:.2f}rad\n\tWrist: {0:.2f}rad\n\n".format(data.position[2],data.position[3],data.position[4],data.position[5])) 
+    #     # print("Gripper Position:\n\tGripper: 0:.2f}rad\n".format(data.position[6])) 
+    #     print("----------") 
+     
+    # listens to the "joint_states" topic and sends them to "joint_callback" for processing
+    # def read_joint_states(self): 
+    #     rospy.Subscriber("joint_states",JointState,self.joint_callback) 
+
+
+    def move_arm(self): 
+        jointpub = rospy.Publisher('/arm_controller/command',Float64MultiArray, queue_size =10)    
+        joint_pos = Float64MultiArray() 
+    #   Joint Position vector should contain 6 elements:
+    #   [0, shoulder1, shoulder2, elbow, wrist, gripper]
+        states=[0, 1.0, 1.0, 100, 0.5, 0.15]
+        joint_pos.data = states#self.clean_joint_states(states)
+        print("MOVING ARM")
+        jointpub.publish(joint_pos)
+        # self.read_joint_states()
 
     def start(self):
         while not rospy.is_shutdown():
@@ -245,8 +333,8 @@ class RobotRL(object):
 
         ## Dimension is 10x10 ([[-5:5],[-5:5]]) arena (harcoded for now)
         ## Make coke spawn area smaller; easier for camera to see
-        for i in self.coke_list:
-            self.smsClient(i, (1-2*np.random.random(2))*3)
+        # for i in self.coke_list:
+            # self.smsClient(i, (1-2*np.random.random(2))*3)
 
     def getCoke(self, name):
         model_coordinates = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
