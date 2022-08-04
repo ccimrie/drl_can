@@ -88,8 +88,8 @@ class RobotRL(object):
         # self.image=None
         self.episode=0
         self.total_eps=0
-        self.max_eps=300
         self.learn_eps=100
+        self.max_eps=self.learn_eps*2
 
         robot = moveit_commander.RobotCommander()
         scene = moveit_commander.PlanningSceneInterface()
@@ -130,6 +130,9 @@ class RobotRL(object):
             print("Service call failed: %s"%e)
 
     def imageSub(self, data):
+        if self.episode%100==0:
+            print(self.episode)
+
         # Convert image to state for DRL-network
         image = self.br.imgmsg_to_cv2(data)[90:440,:]/255.0
         self.image_history.append(image)
@@ -142,7 +145,7 @@ class RobotRL(object):
         act_probs, critic_value = self.rlDNN(state)
         action_probs=np.squeeze(act_probs[0])
         
-        self.sanity.append([act_probs, critic_value])
+        # self.sanity.append([act_probs, critic_value])
 
         ## Check if a grab or move action:
         # p=np.random.random()
@@ -237,7 +240,7 @@ class RobotRL(object):
                 self.rlDNN.save(path+"model_nav.h5")
         else:
             self.episode=self.episode+1
-        if self.total_eps==self.max_eps or success:
+        if self.total_eps==self.max_eps or grab:
             self.total_eps=0
         #     # path=os.environ["MODEL_PATH"]
         #     # if path=="":
@@ -339,7 +342,7 @@ class RobotRL(object):
 
             # Backpropagation
             loss_value = sum(actor_losses) + sum(critic_losses)
-            print(loss_value)
+            # print("Loss: ",loss_value[0])
             grads = tape.gradient(loss_value, self.rlDNN.trainable_variables)
             self.optimizer.apply_gradients(zip(grads, self.rlDNN.trainable_variables))
             print("Learning completed\n\n")
