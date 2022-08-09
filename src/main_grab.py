@@ -13,6 +13,7 @@ from tensorflow.keras import layers
 from std_srvs.srv import Empty
 from std_msgs.msg import String
 from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Int8
 from sensor_msgs.msg import JointState 
 from sensor_msgs.msg import Image
 from trajectory_msgs.msg import JointTrajectory
@@ -64,9 +65,10 @@ class RobotRL(object):
             hl_flatten=layers.Flatten()(hl_1)
             hl_4 = layers.Dense(64, activation="relu")(hl_flatten)
             hl_5 = layers.Dense(64, activation="relu")(hl_4)
-            action = layers.Dense(num_actions, activation="sigmoid")(hl_5)
+            mu = layers.Dense(num_actions, activation="sigmoid")(hl_5)
+            sigma = layers.Dense(num_actions, activation="softplus")(hl_5)
             critic = layers.Dense(1)(hl_5)
-            self.rlDNN=keras.Model(inputs=inputs, outputs=[action, critic])
+            self.rlDNN=keras.Model(inputs=inputs, outputs=[mu, sigma, critic])
 
         self.optimizer=keras.optimizers.Adam(learning_rate=0.01)
         self.huber_loss = keras.losses.Huber()
@@ -96,21 +98,24 @@ class RobotRL(object):
         self.move_group = moveit_commander.MoveGroupCommander("arm")
         self.gripper_group=moveit_commander.MoveGroupCommander("gripper")    
         self.grab_attempts=0
+        self.arm=0
+
         # Subscribers
         ##   Subscribe vision (image from camera)
         rospy.Subscriber("/camera/rgb/image_raw", Image, self.imageSub)
+        rospy.Subscriber("/arm_motion", Int8, self.armUpdate)
         # ##   Subscribe robot state(current velocity, and arm state)
         # # rospy.Subscriber("/cmd_vel", Twist, self.velSub)
         # # rospy.Subscriber("/arm_controller/state", , self.velSub)
 
         # # Publishers
         self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
+        self.arm_update_pub=rospy.Publisher("/arm_motion",Int8,queue_size=1)
         # self.state_publish=rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
 
         ## Initial reset of world to randomise coke can positions
         self.resetWorld()
         self.gripperOpen()
-
         # self.moveArmAngle([1.2,-0.4,-0.8])
 
         # self.moveArm([0.182,0.0,0.281])
@@ -119,6 +124,32 @@ class RobotRL(object):
         # self.gripperClose()
         # self.moveArmPose([0.182,0.0,0.281])
         # print("initialised")
+
+    def armUpdate(self, data):
+        arm_temp=data.data
+        print(self.arm)
+        if arm_temp==0:
+            self.moveArmHome()
+            print("Arm change: check for reward")
+            pos_coke=self.gms_client("coke_1","link").pose.position
+            ## Assume last reward step was for grab attempt
+            if pos_coke.z>0.1:
+                self.rewards_history[-1]=self.rewards_history[-1]+100
+                twist=Twist()
+                twist.linear.x=0.0
+                twist.angular.z=0.0
+                self.vel_pub.publish(twist)
+                self.imageSubLearn()
+                path=os.environ["MODEL_PATH"]
+                if path=="":
+                    print("No path defined, model not saved")
+                else:
+                    self.rlDNN.save(path+"model_nav.h5")
+                self.resetWorld()
+            else:
+                self.rewards_history[-1]=self.rewards_history[-1]-100
+                self.moveArmHome()
+        self.arm=arm_temp
 
     def gms_client(self,model_name,relative_entity_name):
         rospy.wait_for_service('/gazebo/get_model_state')
@@ -130,6 +161,9 @@ class RobotRL(object):
             print("Service call failed: %s"%e)
 
     def imageSub(self, data):
+        if self.arm==1:
+            return
+
         if self.episode%100==0:
             print(self.episode)
 
@@ -142,8 +176,9 @@ class RobotRL(object):
 
         # Predict action probabilities and estimated future rewards
         # from environment state
-        act_probs, critic_value = self.rlDNN(state)
+        act_probs, sigma_out, critic_value = self.rlDNN(state)
         action_probs=np.squeeze(act_probs[0])
+        sigma_out=np.squeeze(sigma_out[0])
         
         # self.sanity.append([act_probs, critic_value])
 
@@ -153,10 +188,10 @@ class RobotRL(object):
         grab=0
         # Send velocity to robot
         x_mu=(2*action_probs[0]-1)
-        x_var=action_probs[1]
+        x_var=sigma_out[0]
 
-        az_mu=(2*action_probs[2]-1)
-        az_var=action_probs[3]
+        az_mu=(2*action_probs[1]-1)
+        az_var=sigma_out[3]
 
         ## Ignore off-diagonals in covar matrix?
         # rho_var=action_probs[4]
@@ -170,6 +205,8 @@ class RobotRL(object):
 
         act=np.random.multivariate_normal(mu,sigma)
 
+        # print("act/mu/sigma: ", act, mu, sigma)
+
         # twist_vel.linear.x=act[0]*0.05
         # twist_vel.angular.z=act[1]*0.05
         # self.vel_pub.publish(twist_vel)
@@ -181,24 +218,35 @@ class RobotRL(object):
             twist_vel.linear.x=act[0]*0.05
             twist_vel.angular.z=act[1]*0.05
             self.vel_pub.publish(twist_vel)
-            time.sleep(0.1)
+            time.sleep(0.05)
         else:
             twist_vel.linear.x=0.0
             twist_vel.angular.z=0.0
             self.vel_pub.publish(twist_vel)
-            self.grab_attempts=self.grab_attempts+1
-            print("Grab attempt: ", self.grab_attempts)
-            self.gripperOpen()
-            self.moveArmAngle([1.2,-0.4,-0.8])
-            self.gripperClose()
-            self.moveArmHome()
-            grab=1
+            self.arm_update_pub.publish(1)
+
+            p_act_denom=1.0/np.sqrt(np.linalg.det(2*np.pi*sigma)+self.eps)
+            p_act_exp=-0.5*np.matmul(np.matmul(np.transpose((act-mu)),np.linalg.pinv(sigma,hermitian=True)),(act-mu))
+            p_act=p_act_denom*np.exp(p_act_exp)
+            self.action_probs_history.append(p_act)            
+
+            pos_coke=self.gms_client("coke_1","link").pose.position
+            pos_robot=self.gms_client("robot", "").pose.position
+            dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
+            reward=1.0/((np.sqrt(dist)-0.35)**2+1e-1)
+            self.rewards_history.append(reward)
+            return
 
         # Record outcome
         # self.critic_value_history.append(critic_value[0, 0])
         p_act_denom=1.0/np.sqrt(np.linalg.det(2*np.pi*sigma)+self.eps)
         p_act_exp=-0.5*np.matmul(np.matmul(np.transpose((act-mu)),np.linalg.pinv(sigma,hermitian=True)),(act-mu))
         p_act=p_act_denom*np.exp(p_act_exp)
+        if p_act<0:
+            print("oops")
+        elif p_act>1:
+            print("Not right")
+            print("Act/sigma/Mu: ", act, sigma, mu)
         self.action_probs_history.append(p_act)
 
         # Get reward
@@ -214,20 +262,11 @@ class RobotRL(object):
         #         dist=dist_temp
         #         pos_coke=pos_coke_temp
     
-        reward=1.0/((np.sqrt(dist)-0.3)**2+1e-1)
-
-        success=0
-
-        if grab and pos_coke.z>0:
-            reward=reward+100
-            success=1
-        elif grab:
-            reward=reward-100
-            self.gripperOpen()
+        reward=1.0/((np.sqrt(dist)-0.35)**2+1e-1)
 
         self.rewards_history.append(reward)
         # After fixed episode length learn
-        if self.episode==self.learn_eps:
+        if self.episode>self.learn_eps:
             twist=Twist()
             twist_vel.linear.x=0.0
             twist_vel.angular.z=0.0
@@ -238,18 +277,20 @@ class RobotRL(object):
                 print("No path defined, model not saved")
             else:
                 self.rlDNN.save(path+"model_nav.h5")
+            self.resetWorld()
+            self.episode=0
         else:
             self.episode=self.episode+1
-        if self.total_eps==self.max_eps or grab:
-            self.total_eps=0
-        #     # path=os.environ["MODEL_PATH"]
-        #     # if path=="":
-        #         # print("No path defined, model not saved")
-        #     # else:
-        #         # self.rlDNN.save(path+"model_grab.h5")
-            self.resetWorld()
-        else:
-            self.total_eps=self.total_eps+1
+        # if self.total_eps>self.max_eps or grab:
+        #     self.total_eps=0
+        # #     # path=os.environ["MODEL_PATH"]
+        # #     # if path=="":
+        # #         # print("No path defined, model not saved")
+        # #     # else:
+        # #         # self.rlDNN.save(path+"model_grab.h5")
+        #     self.resetWorld()
+        # else:
+        #     self.total_eps=self.total_eps+1
 
 
     def imageSubLearn(self):
@@ -271,18 +312,19 @@ class RobotRL(object):
 
                 # Predict action probabilities and estimated future rewards
                 # from environment state
-                act_probs, critic_value = self.rlDNN(state)
+                act_probs, sigma_out, critic_value = self.rlDNN(state)
                 action_probs=np.squeeze(act_probs[0])
+                sigma_out=np.squeeze(sigma_out[0])
             
                 # print("Action: ",act_probs,"\n", "Critic: ",critic_value,"\n", self.sanity[i])
                 # time.sleep(20)
                 ## Check if a grab or move action:
                 # Send velocity to robot
                 x_mu=(2*action_probs[0]-1)
-                x_var=action_probs[1]
+                x_var=sigma_out[0]
 
-                az_mu=(2*action_probs[2]-1)
-                az_var=action_probs[3]
+                az_mu=(2*action_probs[1]-1)
+                az_var=sigma_out[1]
 
                 ## Ignore off-diagonals in covar matrix?
                 # rho_var=action_probs[4]
@@ -314,12 +356,15 @@ class RobotRL(object):
             returns = []
             discounted_sum = 0
             for r in self.rewards_history[::-1]:
+                # print(r)
                 discounted_sum = r + self.gamma * discounted_sum
+                # returns.append(discounted_sum)
                 returns.insert(0, discounted_sum)
 
             # Normalize
             returns = np.array(returns)
             returns = (returns - np.mean(returns)) / (np.std(returns) + self.eps)
+            returns=np.flip(returns)
             returns = returns.tolist()
 
             # Calculating loss values to update our network
