@@ -55,14 +55,14 @@ class RobotRL(object):
             self.rlDNN=keras.models.load_model(path+"model_nav.h5")
         else:
             print("Creating new neural network")
-            num_actions = 4 # linear x mu, angular z mu, linear x var, angular z var; no x&z covar or grab
+            num_actions = 2 # linear x mu, angular z mu, linear x var, angular z var; no x&z covar or grab
             num_hidden = 128
             # inputs = layers.Input(shape=(480,640,3,))
             inputs = layers.Input(shape=(350,640,3,))
             hl_1 = layers.Conv2D(8, 7, activation="relu")(inputs)
             hl_2 = layers.Conv2D(16, 5, activation="relu")(hl_1)
             # hl_3 = layers.Conv2D(32, 3, activation="relu")(hl_2)
-            hl_flatten=layers.Flatten()(hl_1)
+            hl_flatten=layers.Flatten()(hl_2)
             hl_4 = layers.Dense(64, activation="relu")(hl_flatten)
             hl_5 = layers.Dense(64, activation="relu")(hl_4)
             mu = layers.Dense(num_actions, activation="sigmoid")(hl_5)
@@ -77,20 +77,15 @@ class RobotRL(object):
         self.rewards_history = []
         self.running_reward = 0
         self.image_history=[]
-        # self.tape=tf.GradientTape()
-        # episode_count = 0
 
         self.sanity=[]
 
         # RL Params
         self.gamma = 0.99
         self.eps = np.finfo(np.float32).eps.item()
-        # self.vel=[0,0]
-        # State variables
-        # self.image=None
         self.episode=0
         self.total_eps=0
-        self.learn_eps=100
+        self.learn_eps=1000
         self.max_eps=self.learn_eps*2
 
         robot = moveit_commander.RobotCommander()
@@ -100,19 +95,16 @@ class RobotRL(object):
         self.grab_attempts=0
         self.arm=0
 
-        # Subscribers
-        ##   Subscribe vision (image from camera)
+        ## Subscribers
+        ## Subscribe vision (image from camera)
+        ## Subscribe to arm motion, determines whether navigating or grabbing can
         rospy.Subscriber("/camera/rgb/image_raw", Image, self.imageSub)
         rospy.Subscriber("/arm_motion", Int8, self.armUpdate)
-        # ##   Subscribe robot state(current velocity, and arm state)
-        # # rospy.Subscriber("/cmd_vel", Twist, self.velSub)
-        # # rospy.Subscriber("/arm_controller/state", , self.velSub)
 
-        # # Publishers
+        ## Publishers
         self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
         self.arm_update_pub=rospy.Publisher("/arm_motion",Int8,queue_size=1)
-        # self.state_publish=rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=1)
-
+        
         ## Initial reset of world to randomise coke can positions
         self.resetWorld()
         self.gripperOpen()
@@ -147,7 +139,7 @@ class RobotRL(object):
                     self.rlDNN.save(path+"model_nav.h5")
                 self.resetWorld()
             else:
-                self.rewards_history[-1]=self.rewards_history[-1]-100
+                self.rewards_history[-1]=self.rewards_history[-1]-5
                 self.moveArmHome()
         self.arm=arm_temp
 
@@ -180,23 +172,20 @@ class RobotRL(object):
         action_probs=np.squeeze(act_probs[0])
         sigma_out=np.squeeze(sigma_out[0])
         
-        # self.sanity.append([act_probs, critic_value])
+        self.sanity.append([act_probs, sigma_out, critic_value])
 
         ## Check if a grab or move action:
         # p=np.random.random()
         twist_vel=Twist()
-        grab=0
+        
         # Send velocity to robot
         x_mu=(2*action_probs[0]-1)
         x_var=sigma_out[0]
 
         az_mu=(2*action_probs[1]-1)
-        az_var=sigma_out[3]
+        az_var=sigma_out[1]
 
         ## Ignore off-diagonals in covar matrix?
-        # rho_var=action_probs[4]
-        ## azx_var cannot be greatest var
-        # azx_var=rho_var*np.sqrt(x_var)*np.sqrt(az_var)
         azx_var=0.0
 
         twist_vel=Twist()
@@ -205,7 +194,9 @@ class RobotRL(object):
 
         act=np.random.multivariate_normal(mu,sigma)
 
-        # print("act/mu/sigma: ", act, mu, sigma)
+        act=np.clip(act,-1,1)
+
+        # print("\n\nact/mu/sigma: ", act, mu, sigma)
 
         # twist_vel.linear.x=act[0]*0.05
         # twist_vel.angular.z=act[1]*0.05
@@ -215,31 +206,45 @@ class RobotRL(object):
         ## Grab if speed is less than 0.01?
         # print('\n\n',act[0],act[1])
         if np.abs(act[0])>0.1 or np.abs(act[1])>0.1:
-            twist_vel.linear.x=act[0]*0.05
-            twist_vel.angular.z=act[1]*0.05
+            twist_vel.linear.x=act[0]*0.1
+            twist_vel.angular.z=act[1]*0.1
             self.vel_pub.publish(twist_vel)
-            time.sleep(0.05)
+            # time.sleep(0.)
         else:
             twist_vel.linear.x=0.0
             twist_vel.angular.z=0.0
             self.vel_pub.publish(twist_vel)
-            self.arm_update_pub.publish(1)
 
-            p_act_denom=1.0/np.sqrt(np.linalg.det(2*np.pi*sigma)+self.eps)
+            eig_values=np.linalg.eig(2*np.pi*sigma)[0]
+            pd=np.product(eig_values[eig_values>1e-12])
+            p_act_denom=1.0/np.sqrt(pd)
             p_act_exp=-0.5*np.matmul(np.matmul(np.transpose((act-mu)),np.linalg.pinv(sigma,hermitian=True)),(act-mu))
             p_act=p_act_denom*np.exp(p_act_exp)
             self.action_probs_history.append(p_act)            
+
+            if p_act<0:
+                print("oops")
+            elif p_act>1:
+                print("Not right")
+                print("Act/sigma/Mu: ", act, sigma, mu)
 
             pos_coke=self.gms_client("coke_1","link").pose.position
             pos_robot=self.gms_client("robot", "").pose.position
             dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
             reward=1.0/((np.sqrt(dist)-0.35)**2+1e-1)
             self.rewards_history.append(reward)
+            self.episode=self.episode+1
+            self.arm_update_pub.publish(1)
             return
 
         # Record outcome
         # self.critic_value_history.append(critic_value[0, 0])
-        p_act_denom=1.0/np.sqrt(np.linalg.det(2*np.pi*sigma)+self.eps)
+        # p_act_denom=1.0/np.sqrt(np.linalg.det(2*np.pi*sigma)+self.eps)
+
+        ## Calculate the pseudo-determinent
+        eig_values=np.linalg.eig(2*np.pi*sigma)[0]
+        pd=np.product(eig_values[eig_values>1e-12])
+        p_act_denom=1.0/np.sqrt(pd)
         p_act_exp=-0.5*np.matmul(np.matmul(np.transpose((act-mu)),np.linalg.pinv(sigma,hermitian=True)),(act-mu))
         p_act=p_act_denom*np.exp(p_act_exp)
         if p_act<0:
@@ -292,7 +297,6 @@ class RobotRL(object):
         # else:
         #     self.total_eps=self.total_eps+1
 
-
     def imageSubLearn(self):
         print("\n\nLearning\n\n")
         act_probs_history=[]
@@ -307,17 +311,13 @@ class RobotRL(object):
                 state = tf.convert_to_tensor(self.image_history[i])#.reshape(480*640*3))#(-1,480,640,3))
                 state=tf.expand_dims(state,0)
 
-                # cv2.imshow("test", self.image_history[i])
-                # cv2.waitKey(10)
-
                 # Predict action probabilities and estimated future rewards
                 # from environment state
                 act_probs, sigma_out, critic_value = self.rlDNN(state)
+
                 action_probs=np.squeeze(act_probs[0])
                 sigma_out=np.squeeze(sigma_out[0])
             
-                # print("Action: ",act_probs,"\n", "Critic: ",critic_value,"\n", self.sanity[i])
-                # time.sleep(20)
                 ## Check if a grab or move action:
                 # Send velocity to robot
                 x_mu=(2*action_probs[0]-1)
@@ -327,9 +327,6 @@ class RobotRL(object):
                 az_var=sigma_out[1]
 
                 ## Ignore off-diagonals in covar matrix?
-                # rho_var=action_probs[4]
-                ## azx_var cannot be greatest var
-                # azx_var=rho_var*np.sqrt(x_var)*np.sqrt(az_var)
                 azx_var=0.0
 
                 mu=np.array([x_mu,az_mu])
@@ -339,16 +336,11 @@ class RobotRL(object):
                 
                 # Record outcome
                 critic_value_history.append(critic_value[0, 0])
-                # p_act_denom=1.0/np.sqrt(np.linalg.det(2*np.pi*sigma)+self.eps)
-                # p_act_exp=-0.5*np.matmul(np.matmul(np.transpose((act-mu)),np.linalg.pinv(sigma,hermitian=True)),(act-mu))
-                # p_act=p_act_denom*np.exp(p_act_exp)
-                act_probs_history.append(np.log(act+self.eps))
-
-                # Get reward
-                # Reward is distance between coke and robot optimal is 0.2 distance
-                ## Assumption: always at least one coke can
-                # reward=self.rewards_history[i]
-            
+                if act==1:
+                    act_probs_history.append(np.log(act))
+                else:
+                    act_probs_history.append(np.log(act+self.eps))
+        
             # Calculate expected value from rewards
             # - At each timestep what was the total reward received after that timestep
             # - Rewards in the past are discounted by multiplying them with gamma
@@ -356,15 +348,12 @@ class RobotRL(object):
             returns = []
             discounted_sum = 0
             for r in self.rewards_history[::-1]:
-                # print(r)
                 discounted_sum = r + self.gamma * discounted_sum
-                # returns.append(discounted_sum)
                 returns.insert(0, discounted_sum)
 
             # Normalize
             returns = np.array(returns)
             returns = (returns - np.mean(returns)) / (np.std(returns) + self.eps)
-            returns=np.flip(returns)
             returns = returns.tolist()
 
             # Calculating loss values to update our network
@@ -379,6 +368,7 @@ class RobotRL(object):
                 # The actor must be updated so that it predicts an action that leads to
                 # high rewards (compared to critic's estimate) with high probability.
                 diff = ret - value
+                print(diff, ret, value, log_act, '\n\nActor loss: ', -log_act*diff)
                 actor_losses.append(-log_act * diff)  # actor loss
 
                 # The critic must be updated so that it predicts a better estimate of
@@ -387,14 +377,11 @@ class RobotRL(object):
 
             # Backpropagation
             loss_value = sum(actor_losses) + sum(critic_losses)
-            # print("Loss: ",loss_value[0])
             grads = tape.gradient(loss_value, self.rlDNN.trainable_variables)
+            print("Acquired gradients")
             self.optimizer.apply_gradients(zip(grads, self.rlDNN.trainable_variables))
             print("Learning completed\n\n")
             # Reset values
-            # Clear the loss and reward history
-            # self.action_probs_history.clear()
-            # self.critic_value_history.clear()
             self.image_history.clear()
             self.rewards_history.clear()
             self.action_probs_history.clear()
