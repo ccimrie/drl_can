@@ -1,0 +1,338 @@
+<sdf version='1.8'>
+  <world name='shapes'>
+    <plugin name='ignition::gazebo::systems::Physics' filename='ignition-gazebo-physics-system'/>
+    <plugin name='ignition::gazebo::systems::UserCommands' filename='ignition-gazebo-user-commands-system'/>
+    <plugin name='ignition::gazebo::systems::SceneBroadcaster' filename='ignition-gazebo-scene-broadcaster-system'/>
+    <plugin name='ignition::gazebo::systems::Sensors' filename='ignition-gazebo-sensors-system'>
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <gui fullscreen='false'>
+      <plugin name='3D View' filename='MinimalScene'>
+        <ignition-gui>
+          <title>3D View</title>
+          <property type='bool' key='showTitleBar'>false</property>
+          <property type='string' key='state'>docked</property>
+        </ignition-gui>
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <ambient_light>1.0 1.0 1.0</ambient_light>
+        <background_color>0.8 0.8 0.8</background_color>
+        <camera_pose>-6 0 6 0 0.5 0</camera_pose>
+      </plugin>
+      <plugin name='Entity context menu' filename='EntityContextMenuPlugin'>
+        <ignition-gui>
+          <property key='state' type='string'>floating</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </ignition-gui>
+      </plugin>
+      <plugin name='Scene Manager' filename='GzSceneManager'>
+        <ignition-gui>
+          <property key='resizable' type='bool'>false</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='state' type='string'>floating</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </ignition-gui>
+      </plugin>
+      <plugin name='Interactive view control' filename='InteractiveViewControl'>
+        <ignition-gui>
+          <property key='resizable' type='bool'>false</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='state' type='string'>floating</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </ignition-gui>
+      </plugin>
+      <plugin name='Camera Tracking' filename='CameraTracking'>
+        <ignition-gui>
+          <property key='resizable' type='bool'>false</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='state' type='string'>floating</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </ignition-gui>
+      </plugin>
+      <plugin name='World control' filename='WorldControl'>
+        <ignition-gui>
+          <title>World control</title>
+          <property type='bool' key='showTitleBar'>false</property>
+          <property type='bool' key='resizable'>false</property>
+          <property type='double' key='height'>72</property>
+          <property type='double' key='width'>121</property>
+          <property type='double' key='z'>1</property>
+          <property type='string' key='state'>floating</property>
+          <anchors target='3D View'>
+            <line own='left' target='left'/>
+            <line own='bottom' target='bottom'/>
+          </anchors>
+        </ignition-gui>
+        <play_pause>true</play_pause>
+        <step>true</step>
+        <start_paused>true</start_paused>
+        <use_event>true</use_event>
+      </plugin>
+      <plugin name='World stats' filename='WorldStats'>
+        <ignition-gui>
+          <title>World stats</title>
+          <property type='bool' key='showTitleBar'>false</property>
+          <property type='bool' key='resizable'>false</property>
+          <property type='double' key='height'>110</property>
+          <property type='double' key='width'>290</property>
+          <property type='double' key='z'>1</property>
+          <property type='string' key='state'>floating</property>
+          <anchors target='3D View'>
+            <line own='right' target='right'/>
+            <line own='bottom' target='bottom'/>
+          </anchors>
+        </ignition-gui>
+        <sim_time>true</sim_time>
+        <real_time>true</real_time>
+        <real_time_factor>true</real_time_factor>
+        <iterations>true</iterations>
+      </plugin>
+      <plugin name='Full 2D' filename='ImageDisplay'>
+        <topic>boxes_full_2d_image</topic>
+        <ignition-gui>
+          <title>Full 2D</title>
+          <property key='state' type='string'>docked</property>
+          <property type='double' key='height'>400</property>
+          <property type='double' key='width'>600</property>
+        </ignition-gui>
+      </plugin>
+      <plugin name='Visible 2D' filename='ImageDisplay'>
+        <topic>boxes_visible_2d_image</topic>
+        <ignition-gui>
+          <title>Visible 2D</title>
+          <property key='state' type='string'>docked</property>
+          <property type='double' key='height'>400</property>
+          <property type='double' key='width'>600</property>
+        </ignition-gui>
+      </plugin>
+      <plugin name='3D' filename='ImageDisplay'>
+        <topic>boxes_3d_image</topic>
+        <ignition-gui>
+          <title>3D</title>
+          <property key='state' type='string'>docked</property>
+          <property type='double' key='height'>400</property>
+          <property type='double' key='width'>600</property>
+        </ignition-gui>
+      </plugin>
+    </gui>
+    <scene>
+      <ambient>1 1 1 1</ambient>
+      <background>0.8 0.8 0.8 1</background>
+      <shadows>1</shadows>
+    </scene>
+    <light name='sun' type='directional'>
+      <cast_shadows>1</cast_shadows>
+      <pose>0 0 10 0 -0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.90000000000000002</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+      <spot>
+        <inner_angle>0</inner_angle>
+        <outer_angle>0</outer_angle>
+        <falloff>0</falloff>
+      </spot>
+    </light>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type='adiabatic'/>
+    <physics type='ode'>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+    <model name='ground_plane'>
+      <static>1</static>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode/>
+            </friction>
+            <bounce/>
+            <contact/>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+      <pose>0 0 0 0 -0 0</pose>
+    </model>
+
+    <model name="coke_can">
+    <link name="link">
+      <inertial>
+        <pose>0 0 0.06 0 0 0</pose>
+        <mass>0.014</mass>
+        <inertia>
+          <ixx>0.00055575</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00055575</iyy>
+          <iyz>0</iyz>
+          <izz>0.0001755</izz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <!-- <uri>model://coke_can/meshes/coke_can.dae</uri> -->
+            <uri>coke_can.dae</uri>
+          </mesh>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>30.0</mu>
+              <mu2>30.0</mu2>
+            </ode>
+          </friction>
+          <contact>
+            <ode>
+              <kp>10000000.0</kp>
+              <kd>1.0</kd>
+              <min_depth>0.001</min_depth>
+              <max_vel>0.1</max_vel>
+            </ode>
+          </contact>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>coke_can.dae</uri>
+          </mesh>
+        </geometry>
+        <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+            <label>10</label>
+          </plugin>
+      </visual>
+    </link>
+  </model>
+
+    <model name="boundingbox_camera">
+     <pose>2 0 1.0 0 0.0 3.14</pose>
+     <link name="link">
+       <pose>0.05 0.05 0.05 0 0 0</pose>
+       <inertial>
+         <mass>0.1</mass>
+         <inertia>
+           <ixx>0.000166667</ixx>
+           <iyy>0.000166667</iyy>
+           <izz>0.000166667</izz>
+         </inertia>
+       </inertial>
+       <collision name="collision">
+         <geometry>
+           <box>
+             <size>0.1 0.1 0.1</size>
+           </box>
+         </geometry>
+       </collision>
+       <visual name="visual">
+         <geometry>
+           <box>
+             <size>0.1 0.1 0.1</size>
+           </box>
+         </geometry>
+       </visual>
+       <sensor name="boundingbox_camera" type="boundingbox_camera">
+         <topic>boxes</topic>
+         <camera>
+           <box_type>2d</box_type>
+           <horizontal_fov>1.047</horizontal_fov>
+           <image>
+             <width>800</width>
+             <height>600</height>
+           </image>
+           <clip>
+             <near>0.1</near>
+             <far>10</far>
+           </clip>
+         </camera>
+         <always_on>1</always_on>
+         <update_rate>30</update_rate>
+         <visualize>true</visualize>
+       </sensor>
+     </link>
+   </model>
+
+
+<!--    <model name="thermal_camera_8bit">
+  <pose>4.5 0 0.5 0.0 0.0 3.14</pose>
+  <link name="link">
+    <pose>0.05 0.05 0.05 0 0 0</pose>
+    <collision name="collision">
+      <geometry>
+        <box>
+          <size>0.1 0.1 0.1</size>
+        </box>
+      </geometry>
+    </collision>
+    <visual name="visual">
+      <geometry>
+        <box>
+          <size>0.1 0.1 0.1</size>
+        </box>
+      </geometry>
+    </visual>
+    <sensor name="thermal_camera_8bit" type="thermal">
+      <camera>
+        <horizontal_fov>1.047</horizontal_fov>
+        <image>
+          <width>320</width>
+          <height>240</height>
+          <format>L8</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>100</far>
+        </clip>
+      </camera>
+      <always_on>1</always_on>
+      <update_rate>30</update_rate>
+      <visualize>true</visualize>
+      <topic>thermal_camera_8bit/image</topic>
+      <plugin
+        filename="ignition-gazebo-thermal-sensor-system"
+        name="ignition::gazebo::systems::ThermalSensor">
+        <min_temp>253.15</min_temp>
+        <max_temp>673.15</max_temp>
+        <resolution>3.0</resolution>
+      </plugin>
+    </sensor>
+  </link>
+  <static>true</static>
+</model> -->
+
+  </world>
+</sdf>

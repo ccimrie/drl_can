@@ -1,0 +1,1241 @@
+<sdf version='1.9'>
+  <world name='default'>
+    <plugin name='ignition::gazebo::systems::Physics' filename='ignition-gazebo-physics-system'/>
+    <plugin name='ignition::gazebo::systems::UserCommands' filename='ignition-gazebo-user-commands-system'/>
+    <plugin name='ignition::gazebo::systems::SceneBroadcaster' filename='ignition-gazebo-scene-broadcaster-system'/>
+    <plugin name='ignition::gazebo::systems::Sensors' filename='ignition-gazebo-sensors-system'>
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <gui fullscreen='false'>
+      <plugin name='3D View' filename='MinimalScene'>
+        <ignition-gui>
+          <title>3D View</title>
+          <property type='bool' key='showTitleBar'>false</property>
+          <property type='string' key='state'>docked</property>
+        </ignition-gui>
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <ambient_light>1.0 1.0 1.0</ambient_light>
+        <background_color>0.8 0.8 0.8</background_color>
+        <camera_pose>-6 0 6 0 0.5 0</camera_pose>
+      </plugin>
+      <plugin name='Entity context menu' filename='EntityContextMenuPlugin'>
+        <ignition-gui>
+          <property key='state' type='string'>floating</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </ignition-gui>
+      </plugin>
+      <plugin name='Scene Manager' filename='GzSceneManager'>
+        <ignition-gui>
+          <property key='resizable' type='bool'>false</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='state' type='string'>floating</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </ignition-gui>
+      </plugin>
+      <plugin name='Interactive view control' filename='InteractiveViewControl'>
+        <ignition-gui>
+          <property key='resizable' type='bool'>false</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='state' type='string'>floating</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </ignition-gui>
+      </plugin>
+      <plugin name='Camera Tracking' filename='CameraTracking'>
+        <ignition-gui>
+          <property key='resizable' type='bool'>false</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='state' type='string'>floating</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </ignition-gui>
+      </plugin>
+      <plugin name='World control' filename='WorldControl'>
+        <ignition-gui>
+          <title>World control</title>
+          <property type='bool' key='showTitleBar'>false</property>
+          <property type='bool' key='resizable'>false</property>
+          <property type='double' key='height'>72</property>
+          <property type='double' key='width'>121</property>
+          <property type='double' key='z'>1</property>
+          <property type='string' key='state'>floating</property>
+          <anchors target='3D View'>
+            <line own='left' target='left'/>
+            <line own='bottom' target='bottom'/>
+          </anchors>
+        </ignition-gui>
+        <play_pause>true</play_pause>
+        <step>true</step>
+        <start_paused>true</start_paused>
+        <use_event>true</use_event>
+      </plugin>
+      <plugin name='World stats' filename='WorldStats'>
+        <ignition-gui>
+          <title>World stats</title>
+          <property type='bool' key='showTitleBar'>false</property>
+          <property type='bool' key='resizable'>false</property>
+          <property type='double' key='height'>110</property>
+          <property type='double' key='width'>290</property>
+          <property type='double' key='z'>1</property>
+          <property type='string' key='state'>floating</property>
+          <anchors target='3D View'>
+            <line own='right' target='right'/>
+            <line own='bottom' target='bottom'/>
+          </anchors>
+        </ignition-gui>
+        <sim_time>true</sim_time>
+        <real_time>true</real_time>
+        <real_time_factor>true</real_time_factor>
+        <iterations>true</iterations>
+      </plugin>
+<!--       <plugin name='Full 2D' filename='ImageDisplay'>
+        <topic>boxes_full_2d_image</topic>
+        <ignition-gui>
+          <title>Full 2D</title>
+          <property key='state' type='string'>docked</property>
+          <property type='double' key='height'>400</property>
+          <property type='double' key='width'>600</property>
+        </ignition-gui>
+      </plugin> -->
+      <plugin name='Visible 2D' filename='ImageDisplay'>
+        <!-- <topic>boxes_visible_2d_image</topic> -->
+        <topic>boxes_image</topic>
+        <ignition-gui>
+          <title>Visible 2D</title>
+          <property key='state' type='string'>docked</property>
+          <property type='double' key='height'>400</property>
+          <property type='double' key='width'>600</property>
+        </ignition-gui>
+      </plugin>
+<!--       <plugin name='3D' filename='ImageDisplay'>
+        <topic>boxes_3d_image</topic>
+        <ignition-gui>
+          <title>3D</title>
+          <property key='state' type='string'>docked</property>
+          <property type='double' key='height'>400</property>
+          <property type='double' key='width'>600</property>
+        </ignition-gui>
+      </plugin> -->
+    </gui>
+    <scene>
+      <ambient>1 1 1 1</ambient>
+      <background>0.8 0.8 0.8 1</background>
+      <shadows>false</shadows>
+    </scene>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type='adiabatic'/>
+    <physics type='ode'>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+    <model name='ground_plane'>
+      <static>true</static>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <surface>
+            <contact>
+              <collide_bitmask>65535</collide_bitmask>
+              <ode/>
+            </contact>
+            <friction>
+              <ode>
+                <mu>100</mu>
+                <mu2>50</mu2>
+              </ode>
+              <torsional>
+                <ode/>
+              </torsional>
+            </friction>
+            <bounce/>
+          </surface>
+          <max_contacts>10</max_contacts>
+        </collision>
+        <visual name='visual'>
+          <cast_shadows>false</cast_shadows>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.01 0.01 0.01 1</specular>
+          </material>
+        </visual>
+        <self_collide>false</self_collide>
+        <enable_wind>false</enable_wind>
+        <kinematic>false</kinematic>
+        <pose>0 0 0 0 -0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+      </link>
+      <pose>0 0 0 0 -0 0</pose>
+      <self_collide>false</self_collide>
+    </model>
+
+
+    <model name='arena'>
+      <pose>0.0 0.0 0.0 0 -0 0</pose>
+      <link name='Wall_5'>
+        <collision name='Wall_5_Collision'>
+          <geometry>
+            <box>
+              <size>10 0.15 0.75</size>
+            </box>
+          </geometry>
+          <pose>0 0 0. 0 -0 0</pose>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='Wall_5_Visual'>
+          <pose>0 0 0. 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>10 0.15 0.75</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.01 0.01 0.01 1</specular>
+          </material>
+          <meta>
+            <layer>0</layer>
+          </meta>
+        </visual>
+        <pose>0 -4.925 0 0 -0 0</pose>
+        <self_collide>false</self_collide>
+        <enable_wind>false</enable_wind>
+        <kinematic>false</kinematic>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+      </link>
+      <link name='Wall_6'>
+        <collision name='Wall_6_Collision'>
+          <geometry>
+            <box>
+              <size>10 0.15 0.75</size>
+            </box>
+          </geometry>
+          <pose>0 0 0.0 0 -0 0</pose>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='Wall_6_Visual'>
+          <pose>0 0 0.0 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>10 0.15 0.75</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.01 0.01 0.01 1</specular>
+          </material>
+          <meta>
+            <layer>0</layer>
+          </meta>
+        </visual>
+        <pose>4.925 0 0 0 -0 1.5708</pose>
+        <self_collide>false</self_collide>
+        <enable_wind>false</enable_wind>
+        <kinematic>false</kinematic>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+      </link>
+      <link name='Wall_7'>
+        <collision name='Wall_7_Collision'>
+          <geometry>
+            <box>
+              <size>10 0.15 0.75</size>
+            </box>
+          </geometry>
+          <pose>0 0 0.0 0 -0 0</pose>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='Wall_7_Visual'>
+          <pose>0 0 0.0 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>10 0.15 0.75</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.01 0.01 0.01 1</specular>
+          </material>
+          <meta>
+            <layer>0</layer>
+          </meta>
+        </visual>
+        <pose>0 4.925 0 0 -0 3.14159</pose>
+        <self_collide>false</self_collide>
+        <enable_wind>false</enable_wind>
+        <kinematic>false</kinematic>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+      </link>
+      <link name='Wall_8'>
+        <collision name='Wall_8_Collision'>
+          <geometry>
+            <box>
+              <size>10 0.15 0.75</size>
+            </box>
+          </geometry>
+          <pose>0 0 0.0 0 -0 0</pose>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='Wall_8_Visual'>
+          <pose>0 0 0.0 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>10 0.15 0.75</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.01 0.01 0.01 1</specular>
+          </material>
+          <meta>
+            <layer>0</layer>
+          </meta>
+        </visual>
+        <pose>-4.925 0 0 0 0 -1.5708</pose>
+        <self_collide>false</self_collide>
+        <enable_wind>false</enable_wind>
+        <kinematic>false</kinematic>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+      </link>
+      <static>true</static>
+      <self_collide>false</self_collide>
+    </model>
+
+    <model name='dropoff'>
+      <pose>4.25 3.8 0 0 -0 0</pose>
+      <link name='Wall_0'>
+        <collision name='Wall_5_Collision'>
+          <geometry>
+            <box>
+              <size>1 0.05 0.25</size>
+            </box>
+          </geometry>
+          <pose>0 0 0 0 -0 0</pose>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='Wall_5_Visual'>
+          <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>1 0.05 0.25</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+          <meta>
+            <layer>0</layer>
+          </meta>
+        </visual>
+        <pose>0 0 0 0 -0 0</pose>
+        <self_collide>false</self_collide>
+        <enable_wind>false</enable_wind>
+        <kinematic>false</kinematic>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+      </link>
+      <link name='Wall_6'>
+        <collision name='Wall_6_Collision'>
+          <geometry>
+            <box>
+              <size>1 0.05 0.25</size>
+            </box>
+          </geometry>
+          <pose>0 0 1.25 0 -0 0</pose>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='Wall_6_Visual'>
+          <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>1 0.05 0.25</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+          <meta>
+            <layer>0</layer>
+          </meta>
+        </visual>
+        <pose>0.4925 0.4925 0 0 -0 1.5708</pose>
+        <self_collide>false</self_collide>
+        <enable_wind>false</enable_wind>
+        <kinematic>false</kinematic>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+      </link>
+      <link name='Wall_7'>
+        <collision name='Wall_7_Collision'>
+          <geometry>
+            <box>
+              <size>1 0.05 0.25</size>
+            </box>
+          </geometry>
+          <pose>0 0 0 0 -0 0</pose>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='Wall_7_Visual'>
+          <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>1 0.05 0.25</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+          <meta>
+            <layer>0</layer>
+          </meta>
+        </visual>
+        <pose>0 0.9925 0 0 -0 3.14159</pose>
+        <self_collide>false</self_collide>
+        <enable_wind>false</enable_wind>
+        <kinematic>false</kinematic>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+      </link>
+      <link name='Wall_8'>
+        <collision name='Wall_8_Collision'>
+          <geometry>
+            <box>
+              <size>1 0.05 0.25</size>
+            </box>
+          </geometry>
+          <pose>0 0 1.25 0 -0 0</pose>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='Wall_8_Visual'>
+          <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>1 0.05 0.25</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+          <meta>
+            <layer>0</layer>
+          </meta>
+        </visual>
+        <pose>-0.4925 0.4925 0 0 -0 1.5708</pose>
+        <self_collide>false</self_collide>
+        <enable_wind>false</enable_wind>
+        <kinematic>false</kinematic>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+      </link>
+      <static>true</static>
+      <self_collide>false</self_collide>
+    </model>
+<!--     <light name='sun' type='directional'>
+      <pose>0 0 10 0 -0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <intensity>1</intensity>
+      <direction>-0.5 0.1 -0.9</direction>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <linear>0.01</linear>
+        <constant>0.90000000000000002</constant>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <spot>
+        <inner_angle>0</inner_angle>
+        <outer_angle>0</outer_angle>
+        <falloff>0</falloff>
+      </spot>
+    </light> -->
+<model name='coke_0'>
+<pose> 3.31160724870984 -3.147344930027877 0 0 0 0.29947514824797866 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_1'>
+<pose> 1.2539504243381416 -4.085961068444862 0 0 0 4.929802586464381 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_2'>
+<pose> 3.0703898353244896 -1.0741985044681748 0 0 0 4.625859819579964 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_3'>
+<pose> 3.35381484397845 1.1613314146611746 0 0 0 1.1697061406690745 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_4'>
+<pose> -1.0860772551290572 -2.5963498237162392 0 0 0 0.9476050939576192 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_5'>
+<pose> 2.5624699354279867 2.72484974557846 0 0 0 2.3370618928180797 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_6'>
+<pose> -0.021745264876862513 2.5196715980877316 0 0 0 5.090232333582933 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_7'>
+<pose> -1.490192344356605 -0.496557953790435 0 0 0 1.3929626898484593 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='camera'>
+<pose> -1.968172920534323 -3.33337561930302 0 0 0 2.2230805629451935 </pose>
+<!-- <model name="boundingbox_camera"> -->
+     <pose>2 0 1.0 0 0.0 3.14</pose>
+     <link name="link">
+       <pose>0.05 0.05 0.05 0 0 0</pose>
+       <inertial>
+         <mass>0.1</mass>
+         <inertia>
+           <ixx>0.000166667</ixx>
+           <iyy>0.000166667</iyy>
+           <izz>0.000166667</izz>
+         </inertia>
+       </inertial>
+       <collision name="collision">
+         <geometry>
+           <box>
+             <size>0.1 0.1 0.1</size>
+           </box>
+         </geometry>
+       </collision>
+       <visual name="visual">
+         <geometry>
+           <box>
+             <size>0.1 0.1 0.1</size>
+           </box>
+         </geometry>
+       </visual>
+       <sensor name="boundingbox_camera" type="boundingbox_camera">
+         <topic>boxes</topic>
+         <camera>
+           <box_type>2d</box_type>
+           <horizontal_fov>1.047</horizontal_fov>
+           <image>
+             <width>640</width>
+             <height>480</height>
+           </image>
+           <clip>
+             <near>0.1</near>
+             <far>10</far>
+           </clip>
+
+<!--            <save enabled="true">
+              <path>dataset/</path>
+           </save> -->
+
+         </camera>
+         <always_on>1</always_on>
+         <update_rate>30</update_rate>
+         <visualize>true</visualize>
+       </sensor>
+     </link>
+   </model>
+
+<model name='light_fix'>
+<pose> 3.31160724870984 -3.147344930027877 0 0 0 0.29947514824797866 </pose>
+  <static>false</static>
+  <link name="base">
+    <pose>0.0 0.0 0.02 0.0 0 0</pose>
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.04</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass>10</mass>
+      <inertia>
+       <ixx>0.004395833333333333</ixx>
+       <ixy>0.0</ixy>
+       <ixz>0.0</ixz>
+       <iyy>0.004395833333333333</iyy>
+       <iyz>0.0</iyz>
+       <izz>0.006125</izz>
+     </inertia>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.04</length>
+        </cylinder>
+      </geometry>
+      <material> <!-- LED material -->
+        <ambient>0.4 0.4 0.4 1</ambient>
+        <diffuse>0.4 0.4 0.4 1</diffuse>
+        <specular>0.4 0.4 0.4 0</specular>
+        <emissive>0.4 0.4 0.4 1</emissive>
+      </material> <!-- End LED material -->
+<!--       <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+        <label>10</label>
+      </plugin> -->
+    </visual>
+  </link>
+
+  <link name="light">
+    <pose>0 0. 0.09 0 0 0</pose>
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.1</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass>10</mass>
+      <inertia>
+       <ixx>0.01139583333333333</ixx>
+       <ixy>0.0</ixy>
+       <ixz>0.0</ixz>
+       <iyy>0.01139583333333333</iyy>
+       <iyz>0.0</iyz>
+       <izz>0.006125</izz>
+     </inertia>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.1</length>
+        </cylinder>
+      </geometry>
+      <material> <!-- LED material -->
+        <ambient>0.0 0.0 0.0 1</ambient>
+        <diffuse>1.0 0 0 1</diffuse>
+        <specular>0 0 0 0</specular>
+        <emissive>1 0.5 0 1</emissive>
+      </material> <!-- End LED material -->
+<!--       <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+        <label>10</label>
+      </plugin> -->
+    </visual>
+  </link>
+
+  <visual name="visual">
+<!--     <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>10</label>
+    </plugin> -->
+  </visual>
+  
+  <joint name="light_joint" type="fixed">
+    <pose>0 0 -0.05 .0 0 0</pose>
+    <child>light</child>
+    <parent>base</parent>
+  </joint>
+</model>
+
+
+
+
+  </world>
+</sdf>

@@ -1,0 +1,98 @@
+<?xml version='1.0'?>
+<sdf version='1.7'>
+<model name='light_fix'>
+<pose> 3.31160724870984 -3.147344930027877 0 0 0 0.29947514824797866 </pose>
+  <static>false</static>
+  <link name="base">
+    <pose>0.0 0.0 0.02 0.0 0 0</pose>
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.04</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass>10</mass>
+      <inertia>
+       <ixx>0.004395833333333333</ixx>
+       <ixy>0.0</ixy>
+       <ixz>0.0</ixz>
+       <iyy>0.004395833333333333</iyy>
+       <iyz>0.0</iyz>
+       <izz>0.006125</izz>
+     </inertia>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.04</length>
+        </cylinder>
+      </geometry>
+      <material> <!-- LED material -->
+        <ambient>0.4 0.4 0.4 1</ambient>
+        <diffuse>0.4 0.4 0.4 1</diffuse>
+        <specular>0.4 0.4 0.4 0</specular>
+        <emissive>0.4 0.4 0.4 1</emissive>
+      </material> <!-- End LED material -->
+<!--       <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+        <label>10</label>
+      </plugin> -->
+    </visual>
+  </link>
+
+  <link name="light">
+    <pose>0 0. 0.09 0 0 0</pose>
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.1</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass>10</mass>
+      <inertia>
+       <ixx>0.01139583333333333</ixx>
+       <ixy>0.0</ixy>
+       <ixz>0.0</ixz>
+       <iyy>0.01139583333333333</iyy>
+       <iyz>0.0</iyz>
+       <izz>0.006125</izz>
+     </inertia>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.1</length>
+        </cylinder>
+      </geometry>
+      <material> <!-- LED material -->
+        <ambient>0.0 0.0 0.0 1</ambient>
+        <diffuse>1.0 0 0 1</diffuse>
+        <specular>0 0 0 0</specular>
+        <emissive>1 0.75 0 1</emissive>
+      </material> <!-- End LED material -->
+<!--       <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+        <label>10</label>
+      </plugin> -->
+    </visual>
+  </link>
+
+  <visual name="visual">
+<!--     <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>10</label>
+    </plugin> -->
+  </visual>
+  
+  <joint name="light_joint" type="fixed">
+    <pose>0 0 -0.05 .0 0 0</pose>
+    <child>light</child>
+    <parent>base</parent>
+  </joint>
+</model>
+</sdf>
