@@ -1,3 +1,7 @@
+<?xml version='1.0'?>
+<sdf version='1.7'>
+<model name='light_fix'>
+<pose> 3.31160724870984 -3.147344930027877 0 0 0 0.29947514824797866 </pose>
   <static>false</static>
   <link name="base">
     <pose>0.0 0.0 0.02 0.0 0 0</pose>
@@ -28,14 +32,14 @@
         </cylinder>
       </geometry>
       <material> <!-- LED material -->
-        <ambient>0.4 0.4 0.4 1</ambient>
-        <diffuse>0.4 0.4 0.4 1</diffuse>
-        <specular>0.4 0.4 0.4 0</specular>
-        <emissive>0.6 0.6 0.4 1</emissive>
+        <ambient>0.6 0.6 0.4 1</ambient>
+        <diffuse>0.6 0.6 0.4 1</diffuse>
+        <specular>0.6 0.6 0.4 0</specular>
+        <emissive>0.4 0.4 0.4 1</emissive>
       </material> <!-- End LED material -->
-      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+<!--       <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
         <label>10</label>
-      </plugin>
+      </plugin> -->
     </visual>
   </link>
 
@@ -61,6 +65,7 @@
      </inertia>
     </inertial>
     <visual name="visual">
+      <cast_shadows>true</cast_shadows>
       <geometry>
         <cylinder>
           <radius>.035</radius>
@@ -68,21 +73,21 @@
         </cylinder>
       </geometry>
       <material> <!-- LED material -->
-        <ambient>0 0 0 1</ambient>
-        <diffuse>0 0 0 1</diffuse>
+        <ambient>0.0 0.0 0.0 1</ambient>
+        <diffuse>1.0 0 0 1</diffuse>
         <specular>0 0 0 0</specular>
-        <emissive>1 0.5 0 1</emissive>
+        <emissive>1 0.75 0 1</emissive>
       </material> <!-- End LED material -->
-      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+<!--       <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
         <label>10</label>
-      </plugin>
+      </plugin> -->
     </visual>
   </link>
 
   <visual name="visual">
-    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+<!--     <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
       <label>10</label>
-    </plugin>
+    </plugin> -->
   </visual>
   
   <joint name="light_joint" type="fixed">
@@ -91,3 +96,4 @@
     <parent>base</parent>
   </joint>
 </model>
+</sdf>

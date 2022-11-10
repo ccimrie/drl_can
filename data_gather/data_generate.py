@@ -23,10 +23,10 @@ for i in np.arange(end):
 	for row in csvreader:
 		rows.append(row)
 	# print(rows)
-	data_train.write('./images/'+images[i]+'\n')
+	data_train.write('./coke_data/images/'+images[i]+'\n')
 	label_file=open('labels/'+str(images[i])[:-4]+'.txt','w')
 	for row in rows:
-		CLASS_ID=row[0]
+		CLASS_ID=str(int(int(row[0])/10)-1)
 		x=str(float(row[1])/640.0)
 		y=str(float(row[2])/480.0)
 		width=str(float(row[3])/640.0)
@@ -55,10 +55,10 @@ for i in np.arange(end,len(images)):
 	for row in csvreader:
 		rows.append(row)
 	# print(rows)
-	data_test.write('./images/'+images[i]+'\n')
+	data_test.write('./coke_data/images/'+images[i]+'\n')
 	label_file=open('labels/'+str(images[i])[:-4]+'.txt','w')
 	for row in rows:
-		CLASS_ID=row[0]
+		CLASS_ID=str(int(int(row[0])/10)-1)
 		x=str(float(row[1])/640.0)
 		y=str(float(row[2])/480.0)
 		width=str(float(row[3])/640.0)

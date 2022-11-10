@@ -224,5 +224,5 @@
       </link>
       <static>true</static>
       <self_collide>false</self_collide>
-    </model>
-  </sdf>
+  </model>
+</sdf>

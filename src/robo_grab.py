@@ -57,9 +57,9 @@ class RobotArm(object):
 
         ## Set if demoing this node only
         ## Initiate grab
-        # self.gripperOpen()
-        # self.moveArmAngle([1.1,-0.1,-1.0])
-        # self.arm=1
+        self.gripperOpen()
+        self.moveArmAngle([1.1,-0.1,-1.0])
+        self.arm=1
 
     def armUpdate(self, data):
         print("Arm change")
@@ -149,7 +149,7 @@ class RobotArm(object):
         cv2.circle(image, (cX, cY), 5, (255, 0, 0), -1)
         cv2.putText(image, "centroid", (cX - 25, cY - 25),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
         
-        bound=20
+        bound=10
 
         ## check horizontal alignment first
         if cX<centre_x-bound:

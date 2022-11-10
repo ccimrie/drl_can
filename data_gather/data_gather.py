@@ -2,11 +2,17 @@ import subprocess
 import os
 import numpy as np
 import time
+import csv
+
 ## Generate sdf files
 # arena.sdf=arena.txt+x*coke.txt+y*light.txt+close.txt
 
-N=1500
-for count in np.arange(N):
+N=10000-768-676-446-48
+count=0
+## Ensure sudo
+os.system('sudo ls')
+
+while count<N:
 	print("Count: "+str(count)+"/"+str(N))
 	f_full=open('arena.sdf','w')
 	f_base=open('arena.txt','r').read()
@@ -127,3 +133,22 @@ for count in np.arange(N):
 		else:
 			for i in pid:
 				subprocess.run(["sudo", "kill","-9",i])
+
+	## Check if completed
+	last_csv = sorted(list(filter(lambda x: '.csv' in x, os.listdir('dataset/boxes/'))))[-1]
+	
+	file=open('dataset/boxes/'+last_csv)
+	csvreader=csv.reader(file)
+	items=sum(1 for row in csvreader)
+	if items>1:
+		count=count+1
+	else:
+		print(csv)
+		os.remove('dataset/boxes/'+last_csv)
+		os.remove('dataset/images/image'+last_csv[5:-3]+'png')
+
+	# header=[]
+	# header=next(csvreader)
+	# rows=[]
+	# for row in csvreader:
+	# 	rows.append(row)
