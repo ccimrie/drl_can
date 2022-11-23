@@ -141,7 +141,7 @@ class RobotArm(object):
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = 'map'
         goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose.pose = geometry_msgs.msg.Pose(geometry_msgs.msg.Point(4.5, 3.65, 0.000),
+        goal.target_pose.pose = geometry_msgs.msg.Pose(geometry_msgs.msg.Point(4.5, 3.25, 0.000),
                                          geometry_msgs.msg.Quaternion(0.0, 0, np.pi/2, 1.0))
 
         # Start moving
@@ -196,6 +196,8 @@ class RobotArm(object):
 
         vel=Twist()
         vel.linear.x=(ml+mr)/2.0
+        # ml_actual=ml+noise
+        # vel.linear.x=(ml_actual+mr)/2.0
         vel.angular.z=(2*(mr-vel.linear.x))/0.306
         self.vel_pub.publish(vel)
 

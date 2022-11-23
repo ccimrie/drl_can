@@ -194,9 +194,9 @@ class RobotArm(object):
         # display the image
         # cv2.imshow("blobs centre", result)
 
-        cv2.imshow("image", image)
+        # cv2.imshow("image", image)
         # cv2.imshow("blobs", result)
-        cv2.waitKey(10)
+        # cv2.waitKey(10)
 
     def moveArmAngle(self, command):
         joint_angles=self.move_group.get_current_joint_values()

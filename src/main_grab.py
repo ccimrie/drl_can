@@ -59,11 +59,17 @@ class RobotRL(object):
             num_hidden = 128
             # inputs = layers.Input(shape=(480,640,3,))
             inputs = layers.Input(shape=(350,640,3,))
-            hl_1 = layers.Conv2D(8, 7, activation="relu")(inputs)
-            hl_2 = layers.Conv2D(16, 5, activation="relu")(hl_1)
+            # hl_1 = layers.Conv2D(8, 7, activation="relu")(inputs)
+            # hl_2 = layers.Conv2D(16, 5, activation="relu")(hl_1)
             # hl_3 = layers.Conv2D(32, 3, activation="relu")(hl_2)
-            hl_flatten=layers.Flatten()(hl_2)
-            hl_4 = layers.Dense(64, activation="relu")(hl_flatten)
+            # hl_flatten=layers.Flatten()(hl_2)
+
+            ## Feed forward network
+            inputs = layers.Input()
+            hl_1 = layers.Dense(64, activation="relu")(inputs)
+            hl_2 = layers.Dense(128, activation="relu")(hl_1)
+            hl_3 = layers.Dense(128, activation="relu")(hl_2)
+            hl_4 = layers.Dense(64, activation="relu")(hl_3)
             hl_5 = layers.Dense(64, activation="relu")(hl_4)
             mu = layers.Dense(num_actions, activation="sigmoid")(hl_5)
             sigma = layers.Dense(num_actions, activation="softplus")(hl_5)
@@ -110,12 +116,18 @@ class RobotRL(object):
         self.gripperOpen()
         # self.moveArmAngle([1.2,-0.4,-0.8])
 
-        # self.moveArm([0.182,0.0,0.281])
-        # print(self.move_group.get_current_pose())
-        # self.moveArmPose([0.2,0.0,0.17])
-        # self.gripperClose()
-        # self.moveArmPose([0.182,0.0,0.281])
-        # print("initialised")
+        ## Set move base initial position
+        # Tell the action client that we want to spin a thread by default
+        self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
+        self.init_pose=rospy.Publisher("/initialpose",geometry_msgs.msg.PoseWithCovarianceStamped, queue_size=1)
+        rospy.loginfo("Wait for the action server to come up")
+        pos_robot=self.gms_client("robot", "").pose.position
+        ont_robot=self.gms_client("robot","").pose.orientation
+        self.setInitialPose(pos_robot,ont_robot)
+
+        # Allow up to 5 seconds for the action server to come up
+        self.move_base.wait_for_server(rospy.Duration(5))
+
 
     def armUpdate(self, data):
         arm_temp=data.data
@@ -448,6 +460,114 @@ class RobotRL(object):
         joint_gripper[1]=-0.01
         self.gripper_group.go(joint_gripper, wait=True)
         self.gripper_group.stop()
+
+    def returnSearch(self):
+        # Send a goal
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = 'map'
+        goal.target_pose.header.stamp = rospy.Time.now()
+        goal.target_pose.pose = geometry_msgs.msg.Pose(geometry_msgs.msg.Point(3.5, 3.5, 0.000),
+                                         geometry_msgs.msg.Quaternion(0.0, 0, -3*np.pi/4.0, 1.0))
+
+        # Start moving
+        self.move_base.send_goal(goal)
+        # Allow TurtleBot up to 60 seconds to complete task
+        # success = self.move_base.wait_for_result(rospy.Duration(60)) 
+        state = self.move_base.get_state()
+        print(state)
+        while state==GoalStatus.ACTIVE or state==GoalStatus.PENDING:
+            state=self.move_base.get_state()
+            print(state)
+        print("Searching")
+        
+        return  
+
+    def returnHome(self):
+        # Send a goal
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = 'map'
+        goal.target_pose.header.stamp = rospy.Time.now()
+        goal.target_pose.pose = geometry_msgs.msg.Pose(geometry_msgs.msg.Point(4.5, 3.25, 0.000),
+                                         geometry_msgs.msg.Quaternion(0.0, 0, np.pi/2, 1.0))
+
+        # Start moving
+        self.move_base.send_goal(goal)
+        # Allow TurtleBot up to 60 seconds to complete task
+        # success = self.move_base.wait_for_result(rospy.Duration(60)) 
+        state = self.move_base.get_state()
+        print(state)
+        while state==GoalStatus.ACTIVE or state==GoalStatus.PENDING:
+            state=self.move_base.get_state()
+            print(state)
+        print("Home")
+        
+        self.scan=rospy.Subscriber('/scan', LaserScan, self.align)
+        self.aligned=0
+        while not self.aligned:
+            time.sleep(0.5)
+        self.scan.unregister()
+        return    
+
+    def align(self, data):
+        vals_left=np.array(data.ranges[0:7])
+        # print(np.array(vals_left))
+        vals_right=np.array(data.ranges[-1:-6:-1])
+
+        goal=0.15
+
+        e_left=vals_left-goal
+        e_right=vals_right-goal
+
+        Kp=0.5
+        Kd=0.1
+        Ki=0.0
+
+        ml=np.sum(Kp*e_left+Kd*(e_left-self.e_left_prev))
+        mr=np.sum(Kp*e_right+Kd*(e_right-self.e_right_prev))
+
+        if ml>0.15:
+            ml=0.15
+        elif ml<-0.15:
+            ml=-0.15
+        if mr>0.15:
+            mr=0.15
+        elif mr<-0.15:
+            mr=-0.15
+
+        self.e_left_prev=e_left
+        self.e_right_prev=e_right
+
+        # float speed_wish_right = (cmd_vel.angle*WHEEL_DIST)/2 + cmd_vel.speed;
+        # float speed_wish_left = cmd_vel.speed*2-speed_wish_right;
+
+        vel=Twist()
+        vel.linear.x=(ml+mr)/2.0
+        # ml_actual=ml+noise
+        # vel.linear.x=(ml_actual+mr)/2.0
+        vel.angular.z=(2*(mr-vel.linear.x))/0.306
+        self.vel_pub.publish(vel)
+
+        e_bound=0.1
+        if (np.sum(e_left)<e_bound and np.sum(e_right)<e_bound):
+            self.aligned=1
+            vel.linear.x=0.0
+            vel.angular.z=0.0
+            self.vel_pub.publish(vel)
+
+    def setInitialPose(self,pos, orientation):
+        pose = geometry_msgs.msg.PoseWithCovarianceStamped()
+        pose.header.frame_id = "map"
+        pose.pose.pose.position.x=pos[0]
+        pose.pose.pose.position.y=pos[1]
+        pose.pose.pose.position.z=pos[2]
+        pose.pose.covariance=[0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891945200942]
+        pose.pose.pose.orientation.z=orientation[0]
+        pose.pose.pose.orientation.w=orientation[1]
+        # rospy.loginfo(pose)
+        # rospy.spin()
+        # rospy.loginfo(pose)
+        self.loop_rate.sleep()
+        self.init_pose.publish(pose)
         
     def start(self):
         while not rospy.is_shutdown():
