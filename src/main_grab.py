@@ -21,9 +21,15 @@ from geometry_msgs.msg import Twist
 from gazebo_msgs.srv import GetModelState
 from gazebo_msgs.msg import ModelState 
 from gazebo_msgs.srv import SetModelState
+from darknet_ros_msgs.msg import ObjectCount
+from darknet_ros_msgs.msg import BoundingBoxes
 import geometry_msgs.msg
 import moveit_commander
 import moveit_msgs.msg
+
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+import actionlib
+from actionlib_msgs.msg import *
 
 from math import pi
 
@@ -46,6 +52,13 @@ class RobotRL(object):
             coke="coke_"+str(i)
             self.coke_list.append(coke)
 
+        ## Number of light fixtures; setting up naming convention
+        self.light_no=light_no
+        self.light_list=[]
+
+        self.state_size=20
+        self.box_state=np.zeros([self.state_size,self.state_size])
+
         # Network
         # num_inputs = 480*640*3
         ## Check if a model is already created
@@ -58,14 +71,14 @@ class RobotRL(object):
             num_actions = 2 # linear x mu, angular z mu, linear x var, angular z var; no x&z covar or grab
             num_hidden = 128
             # inputs = layers.Input(shape=(480,640,3,))
-            inputs = layers.Input(shape=(350,640,3,))
+            # inputs = layers.Input(shape=(350,640,3,))
             # hl_1 = layers.Conv2D(8, 7, activation="relu")(inputs)
             # hl_2 = layers.Conv2D(16, 5, activation="relu")(hl_1)
             # hl_3 = layers.Conv2D(32, 3, activation="relu")(hl_2)
             # hl_flatten=layers.Flatten()(hl_2)
 
             ## Feed forward network
-            inputs = layers.Input()
+            inputs = layers.Input(shape=(self.state_size*self.state_size,))
             hl_1 = layers.Dense(64, activation="relu")(inputs)
             hl_2 = layers.Dense(128, activation="relu")(hl_1)
             hl_3 = layers.Dense(128, activation="relu")(hl_2)
@@ -104,8 +117,12 @@ class RobotRL(object):
         ## Subscribers
         ## Subscribe vision (image from camera)
         ## Subscribe to arm motion, determines whether navigating or grabbing can
-        rospy.Subscriber("/camera/rgb/image_raw", Image, self.imageSub)
+        # rospy.Subscriber("/camera/rgb/image_raw", Image, self.imageSub)
         rospy.Subscriber("/arm_motion", Int8, self.armUpdate)
+
+        ## Need to get number of objects detected, if >0 see what latest bounding boxes are
+        rospy.Subscriber("/darknet_ros/found_object", ObjectCount, self.imageSub)
+        rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.storeBoxes)
 
         ## Publishers
         self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
@@ -123,11 +140,10 @@ class RobotRL(object):
         rospy.loginfo("Wait for the action server to come up")
         pos_robot=self.gms_client("robot", "").pose.position
         ont_robot=self.gms_client("robot","").pose.orientation
-        self.setInitialPose(pos_robot,ont_robot)
+        self.setInitialPose([pos_robot.x,pos_robot.y,pos_robot.z],[ont_robot.z,ont_robot.w])
 
         # Allow up to 5 seconds for the action server to come up
         self.move_base.wait_for_server(rospy.Duration(5))
-
 
     def armUpdate(self, data):
         arm_temp=data.data
@@ -164,6 +180,31 @@ class RobotRL(object):
         except rospy.ServiceException as e:
             print("Service call failed: %s"%e)
 
+    def storeBoxes(self,data):
+        # print("Number of boxes: ", len(data.bounding_boxes))
+        self.box_state[:]=0
+        width=480
+        height=640
+        for box in data.bounding_boxes:
+            print("Doing a box!")
+            xmin=int((box.xmin/width)*(self.state_size-1))
+            xmax=int((box.xmax/width)*(self.state_size-1))
+            ymin=int((box.ymin/height)*(self.state_size-1))
+            ymax=int((box.ymax/height)*(self.state_size-1))
+            val=0
+            if box.Class=="coke":
+                val=1
+            else:
+                val=2
+            for x in np.arange(xmin, xmax):
+                for y in np.arange(ymin, ymax):
+                    if self.box_state[x,y]==0:
+                        self.box_state[x,y]=val
+                    elif self.box_state[x,y]!=val:
+                        self.box_state[x,y]=3
+
+        print(self.box_state)
+
     def imageSub(self, data):
         if self.arm==1:
             return
@@ -172,11 +213,14 @@ class RobotRL(object):
             print(self.episode)
 
         # Convert image to state for DRL-network
-        image = self.br.imgmsg_to_cv2(data)[90:440,:]/255.0
-        self.image_history.append(image)
+        # image = self.br.imgmsg_to_cv2(data)[90:440,:]/255.0
+        # self.image_history.append(image)
         
-        state = tf.convert_to_tensor(image)#.reshape(480*640*3))#(-1,480,640,3))
-        state=tf.expand_dims(state,0)
+        # state = tf.convert_to_tensor(image)#.reshape(480*640*3))#(-1,480,640,3))
+        # state=tf.expand_dims(state,0)
+
+        state=self.box_state.flatten()
+
 
         # Predict action probabilities and estimated future rewards
         # from environment state
@@ -240,10 +284,14 @@ class RobotRL(object):
                 print("Not right")
                 print("Act/sigma/Mu: ", act, sigma, mu)
 
-            pos_coke=self.gms_client("coke_1","link").pose.position
             pos_robot=self.gms_client("robot", "").pose.position
-            dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
-            reward=1.0/((np.sqrt(dist)-0.35)**2+1e-1)
+            reward=0
+
+            for i in np.arange(self.coke_no):
+                pos_coke=self.gms_client("coke_1","link").pose.position
+                dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
+                reward_temp=1.0/((np.sqrt(dist)-0.35)**2+1e-1)
+
             self.rewards_history.append(reward)
             self.episode=self.episode+1
             self.arm_update_pub.publish(1)
@@ -580,17 +628,23 @@ class RobotRL(object):
         reset_world()
         self.gripperOpen()
         self.moveArmHome()
+
+        ## Set robot's position
+        self.smsClient('robot', [3.5, 3.5],-2.356)
+        pos_robot=self.gms_client("robot", "").pose.position
+        ont_robot=self.gms_client("robot","").pose.orientation
+        self.setInitialPose([pos_robot.x,pos_robot.y,pos_robot.z],[ont_robot.z,ont_robot.w])
         ## Dimension is 10x10 ([[-5:5],[-5:5]]) arena (harcoded for now)
         ## Make coke spawn area smaller; easier for camera to see
-        # for i in self.coke_list:
-            # self.smsClient(i, (1-2*np.random.random(2))*3)
+        for i in self.coke_list:
+            self.smsClient(i, (1-2*np.random.random(2))*3,(1-2*np.random.random())*np.pi)
 
     def getCoke(self, name):
         model_coordinates = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
         # print(model_coordinates(name, "link"))
         return model_coordinates(name, "link")
 
-    def smsClient(self, model_name, pos):
+    def smsClient(self, model_name, pos, orient):
         state_msg = ModelState()
         state_msg.model_name = model_name
         state_msg.pose.position.x = pos[0]
@@ -598,7 +652,7 @@ class RobotRL(object):
         state_msg.pose.position.z = 0.0
         state_msg.pose.orientation.x = 0
         state_msg.pose.orientation.y = 0
-        state_msg.pose.orientation.z = 0
+        state_msg.pose.orientation.z = orient
         state_msg.pose.orientation.w = 0
 
         rospy.wait_for_service('/gazebo/set_model_state')

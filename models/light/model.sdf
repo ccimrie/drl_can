@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <sdf version='1.7'>
 <model name='light_fix'>
-<pose> 3.31160724870984 -3.147344930027877 0 0 0 0.29947514824797866 </pose>
+<pose> 0 0 0 0 0 0.29947514824797866 </pose>
   <static>false</static>
   <link name="base">
     <pose>0.0 0.0 0.02 0.0 0 0</pose>

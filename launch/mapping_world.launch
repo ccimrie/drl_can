@@ -6,7 +6,7 @@
 
   <arg name="coke_no_init" default="10"/>
 
-    <!-- Arguments -->
+  <!-- Arguments -->
   <!-- <arg name="model" default="waffle_pi" doc="model type [burger, waffle, waffle_pi]"/> -->
   <arg name="map_file" default="$(find drl_can)/maps/map_world_edit/map_world.yaml"/>
   <arg name="open_rviz" default="true"/>
@@ -17,7 +17,7 @@
   <param name="robot_description" command="$(arg urdf_file)" />
 
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
-    <param name="publish_frequency" type="double" value="50.0" />
+  <param name="publish_frequency" type="double" value="50.0" />
   </node>
 
   <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="laser_filter" output="screen" >

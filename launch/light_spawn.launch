@@ -1,0 +1,14 @@
+<launch>
+
+  <arg name="light_no" default="1"/>
+  <arg name="Y" default="-$(arg light_no)"/>
+
+  <!-- push coke_can description to factory and spawn in Gazebo -->
+  <node name="$(eval 'spawn_gazebo_light'+str(arg('light_no')))" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+  args="-sdf -file $(find drl_can)/models/light/model.sdf -model light_$(arg light_no) -x 0.0 -y $(arg Y) -z 0.0"/>
+    <!-- args="-sdf -file $(find drl_can)/models/model-1_4.sdf -model coke_$(arg coke_no) -x 0.0 -y $(arg Y) -z 0.0"/> -->
+  <include file="$(find drl_can)/launch/light_spawn.launch" if="$(eval arg('light_no') - 1 > 0)">
+  	<arg name="light_no" value="$(eval arg('light_no')-1)"/>
+  </include>  
+
+</launch>
