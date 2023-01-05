@@ -38,7 +38,7 @@ import os
 
 class RobotRL(object):
 
-    def __init__(self, coke_no):
+    def __init__(self, coke_no, light_no):
         self.loop_rate = rospy.Rate(1)
         self.br = CvBridge()
 
@@ -55,6 +55,9 @@ class RobotRL(object):
         ## Number of light fixtures; setting up naming convention
         self.light_no=light_no
         self.light_list=[]
+        for i in np.arange(1,light_no+1):
+            light="light_"+str(i)
+            self.light_list.append(light)
 
         self.state_size=20
         self.box_state=np.zeros([self.state_size,self.state_size])
@@ -118,19 +121,17 @@ class RobotRL(object):
         ## Subscribe vision (image from camera)
         ## Subscribe to arm motion, determines whether navigating or grabbing can
         # rospy.Subscriber("/camera/rgb/image_raw", Image, self.imageSub)
-        rospy.Subscriber("/arm_motion", Int8, self.armUpdate)
+        # rospy.Subscriber("/arm_motion", Int8, self.armUpdate)
 
         ## Need to get number of objects detected, if >0 see what latest bounding boxes are
-        rospy.Subscriber("/darknet_ros/found_object", ObjectCount, self.imageSub)
-        rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.storeBoxes)
+        # rospy.Subscriber("/darknet_ros/found_object", ObjectCount, self.imageSub)
+        # rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.storeBoxes)
 
         ## Publishers
-        self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
-        self.arm_update_pub=rospy.Publisher("/arm_motion",Int8,queue_size=1)
+        # self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
+        # self.arm_update_pub=rospy.Publisher("/arm_motion",Int8,queue_size=1)
         
         ## Initial reset of world to randomise coke can positions
-        self.resetWorld()
-        self.gripperOpen()
         # self.moveArmAngle([1.2,-0.4,-0.8])
 
         ## Set move base initial position
@@ -138,6 +139,8 @@ class RobotRL(object):
         self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
         self.init_pose=rospy.Publisher("/initialpose",geometry_msgs.msg.PoseWithCovarianceStamped, queue_size=1)
         rospy.loginfo("Wait for the action server to come up")
+        self.resetWorld()
+        self.gripperOpen()
         pos_robot=self.gms_client("robot", "").pose.position
         ont_robot=self.gms_client("robot","").pose.orientation
         self.setInitialPose([pos_robot.x,pos_robot.y,pos_robot.z],[ont_robot.z,ont_robot.w])
@@ -622,15 +625,16 @@ class RobotRL(object):
             self.loop_rate.sleep()
 
     def resetWorld(self):
+        print("Resetting world!")
         reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
 
-        ## Reset coke position
+        ## Reset coke/light position
         reset_world()
         self.gripperOpen()
         self.moveArmHome()
 
         ## Set robot's position
-        self.smsClient('robot', [3.5, 3.5],-2.356)
+        self.smsClient('robot', [3.5, 3.5],-1.57)
         pos_robot=self.gms_client("robot", "").pose.position
         ont_robot=self.gms_client("robot","").pose.orientation
         self.setInitialPose([pos_robot.x,pos_robot.y,pos_robot.z],[ont_robot.z,ont_robot.w])
@@ -638,6 +642,8 @@ class RobotRL(object):
         ## Make coke spawn area smaller; easier for camera to see
         for i in self.coke_list:
             self.smsClient(i, (1-2*np.random.random(2))*3,(1-2*np.random.random())*np.pi)
+        for j in self.light_list:
+            self.smsClient(j, (1-2*np.random.random(2))*3,0)
 
     def getCoke(self, name):
         model_coordinates = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
@@ -653,7 +659,7 @@ class RobotRL(object):
         state_msg.pose.orientation.x = 0
         state_msg.pose.orientation.y = 0
         state_msg.pose.orientation.z = orient
-        state_msg.pose.orientation.w = 0
+        state_msg.pose.orientation.w = 1.0
 
         rospy.wait_for_service('/gazebo/set_model_state')
         try:
@@ -665,6 +671,7 @@ class RobotRL(object):
 
 if __name__=='__main__':
     coke_no=int(sys.argv[1])
+    light_no=int(sys.argv[2])
     rospy.init_node("robotRL", anonymous=True)
-    robot=RobotRL(coke_no)
+    robot=RobotRL(coke_no, light_no)
     robot.start()

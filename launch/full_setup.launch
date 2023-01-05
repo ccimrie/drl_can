@@ -96,6 +96,6 @@
     </include>
 
   <!-- run RL experiment -->
-  <!-- <node name="dd_drl" pkg="drl_can" type="main.py" respawn="false" output="screen" args="$(arg coke_no_init)"/> -->
+  <node name="dd_drl" pkg="drl_can" type="main_grab.py" respawn="false" output="screen" args="$(arg coke_no_init) $(arg light_no_init)"/>
 
 </launch>

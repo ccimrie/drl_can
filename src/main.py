@@ -247,6 +247,8 @@ class RobotRL(object):
         ## Make coke spawn area smaller; easier for camera to see
         for i in self.coke_list:
             self.smsClient(i, (1-2*np.random.random(2))*3)
+        for j in self.light_list:
+            self.smsClient(i, (1-2*np.random.random(2))*3)
 
     def getCoke(self, name):
         model_coordinates = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
