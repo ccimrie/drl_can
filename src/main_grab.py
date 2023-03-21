@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 import numpy as np
 import rospy
 # import roslib; roslib.load_manifest('gazebo')
@@ -8,6 +8,7 @@ from cv_bridge import CvBridge
 import cv2
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow import compat
 # from tensorflow.keras.models import load_model
 
 from std_srvs.srv import Empty
@@ -59,8 +60,15 @@ class RobotRL(object):
             light="light_"+str(i)
             self.light_list.append(light)
 
-        self.state_size=20
-        self.box_state=np.zeros([self.state_size,self.state_size])
+        # self.state_size=20
+        self.state_size=10
+        width=640
+        height=480
+
+        self.width_state_size=int(width/self.state_size)
+        self.height_state_size=int(height/self.state_size)
+
+        self.box_state=np.zeros([self.height_state_size, self.width_state_size])
 
         # Network
         # num_inputs = 480*640*3
@@ -81,7 +89,7 @@ class RobotRL(object):
             # hl_flatten=layers.Flatten()(hl_2)
 
             ## Feed forward network
-            inputs = layers.Input(shape=(self.state_size*self.state_size,))
+            inputs = layers.Input(shape=(self.width_state_size*self.height_state_size,))
             hl_1 = layers.Dense(64, activation="relu")(inputs)
             hl_2 = layers.Dense(128, activation="relu")(hl_1)
             hl_3 = layers.Dense(128, activation="relu")(hl_2)
@@ -92,7 +100,12 @@ class RobotRL(object):
             critic = layers.Dense(1)(hl_5)
             self.rlDNN=keras.Model(inputs=inputs, outputs=[mu, sigma, critic])
 
-        self.optimizer=keras.optimizers.Adam(learning_rate=0.01)
+        ## For noetic/python3
+        ##self.optimizer=keras.optimizers.Adam(learning_rate=0.01)
+        ## For melodic/python2
+        self.optimizer=keras.optimizers.Adam(lr=0.01)
+
+
         self.huber_loss = keras.losses.Huber()
         self.action_probs_history = []
         self.critic_value_history = []
@@ -108,7 +121,7 @@ class RobotRL(object):
         self.episode=0
         self.total_eps=0
         self.learn_eps=1000
-        self.max_eps=self.learn_eps*2
+        self.max_eps=self.learn_eps*3
 
         robot = moveit_commander.RobotCommander()
         scene = moveit_commander.PlanningSceneInterface()
@@ -120,15 +133,15 @@ class RobotRL(object):
         ## Subscribers
         ## Subscribe vision (image from camera)
         ## Subscribe to arm motion, determines whether navigating or grabbing can
-        # rospy.Subscriber("/camera/rgb/image_raw", Image, self.imageSub)
-        # rospy.Subscriber("/arm_motion", Int8, self.armUpdate)
+        ## rospy.Subscriber("/camera/rgb/image_raw", Image, self.imageSub)
+        rospy.Subscriber("/arm_motion", Int8, self.armUpdate)
 
         ## Need to get number of objects detected, if >0 see what latest bounding boxes are
-        # rospy.Subscriber("/darknet_ros/found_object", ObjectCount, self.imageSub)
-        # rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.storeBoxes)
+        rospy.Subscriber("/darknet_ros/found_object", ObjectCount, self.imageSub)
+        rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.storeBoxes)
 
         ## Publishers
-        # self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
+        self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
         # self.arm_update_pub=rospy.Publisher("/arm_motion",Int8,queue_size=1)
         
         ## Initial reset of world to randomise coke can positions
@@ -144,9 +157,10 @@ class RobotRL(object):
         pos_robot=self.gms_client("robot", "").pose.position
         ont_robot=self.gms_client("robot","").pose.orientation
         self.setInitialPose([pos_robot.x,pos_robot.y,pos_robot.z],[ont_robot.z,ont_robot.w])
-
+        print("Position set")
         # Allow up to 5 seconds for the action server to come up
         self.move_base.wait_for_server(rospy.Duration(5))
+        print("Got movebase server")
 
     def armUpdate(self, data):
         arm_temp=data.data
@@ -186,27 +200,31 @@ class RobotRL(object):
     def storeBoxes(self,data):
         # print("Number of boxes: ", len(data.bounding_boxes))
         self.box_state[:]=0
-        width=480
-        height=640
+        width=640.0
+        height=480.0
         for box in data.bounding_boxes:
-            print("Doing a box!")
-            xmin=int((box.xmin/width)*(self.state_size-1))
-            xmax=int((box.xmax/width)*(self.state_size-1))
-            ymin=int((box.ymin/height)*(self.state_size-1))
-            ymax=int((box.ymax/height)*(self.state_size-1))
+            # print("Doing a box!", self.width_state_size, self.height_state_size)
+            xmin=int((box.xmin/width)*(self.width_state_size-1))
+            xmax=int((box.xmax/width)*(self.width_state_size-1))
+            ymin=int((box.ymin/height)*(self.height_state_size-1))
+            ymax=int((box.ymax/height)*(self.height_state_size-1))
             val=0
+            # print(box.xmin, box.xmax, box.ymin, box.ymax)
+            # print(xmin, xmax, ymin, ymax)
             if box.Class=="coke":
+                # print("COKE")
                 val=1
             else:
+                # print("NOT COKE")
                 val=2
-            for x in np.arange(xmin, xmax):
-                for y in np.arange(ymin, ymax):
-                    if self.box_state[x,y]==0:
-                        self.box_state[x,y]=val
-                    elif self.box_state[x,y]!=val:
-                        self.box_state[x,y]=3
+            for x in np.arange(xmin, xmax+1):
+                for y in np.arange(ymin, ymax+1):
+                    if self.box_state[y,x]==0:
+                        self.box_state[y,x]=val
+                    elif self.box_state[y,x]!=val:
+                        self.box_state[y,x]=3
 
-        print(self.box_state)
+        # print(self.box_state)
 
     def imageSub(self, data):
         if self.arm==1:
@@ -217,13 +235,12 @@ class RobotRL(object):
 
         # Convert image to state for DRL-network
         # image = self.br.imgmsg_to_cv2(data)[90:440,:]/255.0
-        # self.image_history.append(image)
-        
-        # state = tf.convert_to_tensor(image)#.reshape(480*640*3))#(-1,480,640,3))
-        # state=tf.expand_dims(state,0)
 
-        state=self.box_state.flatten()
-
+        # Get state         
+        image=self.box_state.flatten()
+        self.image_history.append(image)
+        state = tf.convert_to_tensor(image)#.reshape(480*640*3))#(-1,480,640,3))
+        state=tf.expand_dims(state,0)
 
         # Predict action probabilities and estimated future rewards
         # from environment state
@@ -264,7 +281,8 @@ class RobotRL(object):
 
         ## Grab if speed is less than 0.01?
         # print('\n\n',act[0],act[1])
-        if np.abs(act[0])>0.1 or np.abs(act[1])>0.1:
+        # if np.abs(act[0])>0.1 or np.abs(act[1])>0.1:
+        if True:
             twist_vel.linear.x=act[0]*0.1
             twist_vel.angular.z=act[1]*0.1
             self.vel_pub.publish(twist_vel)
@@ -277,7 +295,9 @@ class RobotRL(object):
             eig_values=np.linalg.eig(2*np.pi*sigma)[0]
             pd=np.product(eig_values[eig_values>1e-12])
             p_act_denom=1.0/np.sqrt(pd)
-            p_act_exp=-0.5*np.matmul(np.matmul(np.transpose((act-mu)),np.linalg.pinv(sigma,hermitian=True)),(act-mu))
+            # Python3 allows hermitian=True (more efficient for finding inverse)
+            # p_act_exp=-0.5*np.matmul(np.matmul(np.transpose((act-mu)),np.linalg.pinv(sigma,hermitian=True)),(act-mu))
+            p_act_exp=-0.5*np.matmul(np.matmul(np.transpose((act-mu)),np.linalg.pinv(sigma)),(act-mu))
             p_act=p_act_denom*np.exp(p_act_exp)
             self.action_probs_history.append(p_act)            
 
@@ -291,7 +311,7 @@ class RobotRL(object):
             reward=0
 
             for i in np.arange(self.coke_no):
-                pos_coke=self.gms_client("coke_1","link").pose.position
+                pos_coke=self.gms_client("coke_"+str(i),"link").pose.position
                 dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
                 reward_temp=1.0/((np.sqrt(dist)-0.35)**2+1e-1)
 
@@ -308,7 +328,9 @@ class RobotRL(object):
         eig_values=np.linalg.eig(2*np.pi*sigma)[0]
         pd=np.product(eig_values[eig_values>1e-12])
         p_act_denom=1.0/np.sqrt(pd)
-        p_act_exp=-0.5*np.matmul(np.matmul(np.transpose((act-mu)),np.linalg.pinv(sigma,hermitian=True)),(act-mu))
+        # Python3 allows hermitian=True (more efficient for finding inverse)
+        # p_act_exp=-0.5*np.matmul(np.matmul(np.transpose((act-mu)),np.linalg.pinv(sigma,hermitian=True)),(act-mu))
+        p_act_exp=-0.5*np.matmul(np.matmul(np.transpose((act-mu)),np.linalg.pinv(sigma)),(act-mu))
         p_act=p_act_denom*np.exp(p_act_exp)
         if p_act<0:
             print("oops")
@@ -320,19 +342,27 @@ class RobotRL(object):
         # Get reward
         # Reward is distance between coke and robot optimal is 0.2 distance
         ## Assumption: always at least one coke can
-        pos_coke=self.gms_client("coke_1","link").pose.position
+        pos_coke=self.gms_client("coke_1","").pose.position
         pos_robot=self.gms_client("robot", "").pose.position
-        dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
-        # for i in self.coke_list[1:-1]:
-            #     pos_coke_temp=self.gms_client(i,"link").pose.position
-        #     dist_temp=(pos_coke_temp.x-pos_robot.x)**2+(pos_coke_temp.y-pos_robot.y)**2
-        #     if dist_temp<dist:
-        #         dist=dist_temp
-        #         pos_coke=pos_coke_temp
-    
-        reward=1.0/((np.sqrt(dist)-0.35)**2+1e-1)
 
+        # neg_dist=0
+
+        dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
+
+        for i in self.coke_list[1:]:
+            pos_coke_temp=self.gms_client(i,"").pose.position
+            dist_temp=(pos_coke_temp.x-pos_robot.x)**2+(pos_coke_temp.y-pos_robot.y)**2
+            if dist_temp<dist:
+                dist=dist_temp
+                pos_coke=pos_coke_temp
+        
+        reward_observe=np.sum(image==1)
+        # print(reward_observe)
+        reward_dist=1.0/((np.sqrt(dist)-0.35)**2+1e-1)
+
+        reward=reward_dist+reward_observe
         self.rewards_history.append(reward)
+
         # After fixed episode length learn
         if self.episode>self.learn_eps:
             twist=Twist()
@@ -345,20 +375,20 @@ class RobotRL(object):
                 print("No path defined, model not saved")
             else:
                 self.rlDNN.save(path+"model_nav.h5")
-            self.resetWorld()
+            # self.resetWorld()
             self.episode=0
         else:
             self.episode=self.episode+1
-        # if self.total_eps>self.max_eps or grab:
-        #     self.total_eps=0
+        if self.total_eps>self.max_eps:# or grab:
+            self.total_eps=0
         # #     # path=os.environ["MODEL_PATH"]
         # #     # if path=="":
         # #         # print("No path defined, model not saved")
         # #     # else:
         # #         # self.rlDNN.save(path+"model_grab.h5")
-        #     self.resetWorld()
-        # else:
-        #     self.total_eps=self.total_eps+1
+            self.resetWorld()
+        else:
+            self.total_eps=self.total_eps+1
 
     def imageSubLearn(self):
         print("\n\nLearning\n\n")
@@ -371,6 +401,7 @@ class RobotRL(object):
         with tf.GradientTape() as tape:
             ## Re-observe input
             for i in np.arange(len(self.image_history)):
+
                 state = tf.convert_to_tensor(self.image_history[i])#.reshape(480*640*3))#(-1,480,640,3))
                 state=tf.expand_dims(state,0)
 
@@ -445,10 +476,15 @@ class RobotRL(object):
             self.optimizer.apply_gradients(zip(grads, self.rlDNN.trainable_variables))
             print("Learning completed\n\n")
             # Reset values
-            self.image_history.clear()
-            self.rewards_history.clear()
-            self.action_probs_history.clear()
-            self.sanity.clear()
+            #Python3 (only?) approach
+            # self.image_history.clear()
+            # self.rewards_history.clear()
+            # self.action_probs_history.clear()
+            # self.sanity.clear()
+            self.image_history=[]
+            self.rewards_history=[]
+            self.action_probs_history=[]
+            self.sanity=[]
             self.episode=0
 
     def moveArmAngle(self, command):
