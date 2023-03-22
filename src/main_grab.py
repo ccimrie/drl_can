@@ -268,11 +268,7 @@ class RobotRL(object):
             self.episode=self.episode+1
         if self.total_eps>self.max_eps:# or grab:
             self.total_eps=0
-        # #     # path=os.environ["MODEL_PATH"]
-        # #     # if path=="":
-        # #         # print("No path defined, model not saved")
-        # #     # else:
-        # #         # self.rlDNN.save(path+"model_grab.h5")
+            self.rl_agent.saveNets()
             self.resetWorld()
         else:
             self.total_eps=self.total_eps+1

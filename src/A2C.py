@@ -48,10 +48,10 @@ class A2C:
         
         hl_1 = layers.Dense(256, activation="relu")(inputs)
         hl_2 = layers.Dense(256, activation="relu")(hl_1)
-        hl_3 = layers.Dense(256, activation="relu")(hl_2)
+        hl_3 = layers.Dense(512, activation="relu")(hl_2)
         hl_4 = layers.Dense(512, activation="relu")(hl_3)
         hl_5 = layers.Dense(512, activation="relu")(hl_4)
-        hl_6 = layers.Dense(512, activation="relu")(hl_5)
+        hl_6 = layers.Dense(256, activation="relu")(hl_5)
 
         mu = layers.Dense(self.num_actions, activation="tanh")(hl_6)
         sigma = layers.Dense(self.num_actions, activation="softplus")(hl_6)
