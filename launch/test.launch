@@ -1,0 +1,28 @@
+<launch>
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [waffle, waffle_pi]"/>
+  <arg name="gui" default="true"/>
+  <arg name="paused" default="true"/>
+  <arg name="use_sim_time" default="true"/>
+
+  <arg name="coke_no_init" default="1"/>
+  <arg name="light_no_init" default="7"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <!-- <arg name="world_name" value="$(find drl_can)/worlds/simple_world.world"/> -->
+    <arg name="world_name" value="$(find drl_can)/worlds/blank_world.world"/>
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+  </include>
+
+  <node name="$(eval 'spawn_gazebo_coke')" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+  args="-sdf -file $(find drl_can)/models/coke/model.sdf -model coke_0 -x 0.0 -y 0 -z 1.0"/>
+
+<!--   <include file="$(find drl_can)/launch/coke_spawn.launch">
+    <arg name="coke_no" value="$(arg coke_no_init)"/>
+  </include> -->
+
+<!--   <include file="$(find drl_can)/launch/light_spawn.launch">
+    <arg name="light_no" value="$(arg light_no_init)"/>
+  </include> -->
+</launch>

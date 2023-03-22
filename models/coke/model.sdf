@@ -20,7 +20,9 @@
         <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>model://coke_can/meshes/coke_can.dae</uri>
+            <uri>model://coke/coke_can.dae</uri>
+            <!-- <uri>model://coke_can.dae</uri> -->
+            <!-- <uri>file://home/colin/software/rl-verif/src/drl_can/models/coke/coke_can.dae</uri> -->
           </mesh>
         </geometry>
         <surface>
@@ -44,7 +46,9 @@
         <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>model://coke_can/meshes/coke_can.dae</uri>
+            <uri>model://coke/coke_can.dae</uri>
+            <!-- <uri>model://coke_can.dae</uri> -->
+            <!-- <uri>file://home/colin/software/rl-verif/src/drl_can/models/coke/coke_can.dae</uri> -->
           </mesh>
         </geometry>
       </visual>

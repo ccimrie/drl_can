@@ -6,6 +6,8 @@ import time
 from cv_bridge import CvBridge
 import cv2
 
+from A2C import A2C
+
 from std_srvs.srv import Empty
 from std_msgs.msg import String
 from std_msgs.msg import Float64MultiArray
@@ -68,14 +70,21 @@ class RobotRL(object):
         # Network
         # num_inputs = 480*640*3
         ## Check if a model is already created
-        path=os.environ["MODEL_PATH"]
+        #path=os.environ["MODEL_PATH"]
 
-        self.rl_agent=A2C(self.width_state_size*self.height_state_size, 2)
+        self.rl_agent=A2C(2, self.width_state_size*self.height_state_size)
+
+        self.episode=0
+        self.learn_eps=500
+        self.total_eps=0
+
+        eps_no=10
+        self.max_eps=self.learn_eps*eps_no
 
         ## For noetic/python3
         ##self.optimizer=keras.optimizers.Adam(learning_rate=0.01)
         ## For melodic/python2
-        self.optimizer=keras.optimizers.Adam(lr=0.01)
+##        self.optimizer=keras.optimizers.Adam(lr=0.01)
 
         # arm=RobotArm()
 
@@ -181,8 +190,10 @@ class RobotRL(object):
         # Get state         
         image=self.box_state.flatten()
 
+        self.box_state=self.box_state*0
+
         ## Send state to the networks and get actions
-        act=rl_agent.step(state)
+        act=self.rl_agent.step(image)
 
         ## Check if a grab or move action:
         # p=np.random.random()
@@ -210,7 +221,8 @@ class RobotRL(object):
             self.arm_update_pub.publish(1)
             return
 
-        time.sleep(0.1)
+        ##time.sleep(0.1)
+        rospy.sleep(0.1)
 
         # Get reward
         # Reward is distance between coke and robot optimal is 0.2 distance
@@ -230,8 +242,8 @@ class RobotRL(object):
         reward_observe=np.sum(image==1)
         reward_dist=1.0/((np.sqrt(dist)-0.35)**2+1e-1)
 
-        reward=reward_dist+reward_observe
-        self.rewards_history.append(reward)
+        reward=reward_dist+0.1*reward_observe
+        self.rl_agent.recordReward(reward)
 
         ## After fixed episode length learn
         ## (should also learn if robot completes dropping off?)
