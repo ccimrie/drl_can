@@ -58,7 +58,7 @@ class RobotRL(object):
             self.light_list.append(light)
 
         # self.state_size=20
-        self.state_size=10
+        self.state_size=40
         width=640
         height=480
 
@@ -75,11 +75,13 @@ class RobotRL(object):
         self.rl_agent=A2C(2, self.width_state_size*self.height_state_size)
 
         self.episode=0
-        self.learn_eps=500
+        self.learn_eps=1000
         self.total_eps=0
 
-        eps_no=10
+        eps_no=1
         self.max_eps=self.learn_eps*eps_no
+
+        self.f=open('rewards.txt', 'w+')
 
         ## For noetic/python3
         ##self.optimizer=keras.optimizers.Adam(learning_rate=0.01)
@@ -94,6 +96,8 @@ class RobotRL(object):
         self.gripper_group=moveit_commander.MoveGroupCommander("gripper")    
         self.grab_attempts=0
         self.arm=0
+
+        self.total_episode_reward=0
 
         ## Subscribers
         ## Subscribe vision (image from camera)
@@ -114,7 +118,7 @@ class RobotRL(object):
         self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
         self.init_pose=rospy.Publisher("/initialpose",geometry_msgs.msg.PoseWithCovarianceStamped, queue_size=1)
         rospy.loginfo("Wait for the action server to come up")
-        self.resetWorld()
+        ##self.resetWorld()
         self.gripperOpen()
         pos_robot=self.gms_client("robot", "").pose.position
         ont_robot=self.gms_client("robot","").pose.orientation
@@ -195,6 +199,9 @@ class RobotRL(object):
         ## Send state to the networks and get actions
         act=self.rl_agent.step(image)
 
+        act[0]=np.clip(act[0],-1,1)
+        act[1]=np.clip(act[1],-1,1)
+
         ## Check if a grab or move action:
         # p=np.random.random()
         twist_vel=Twist()
@@ -222,7 +229,12 @@ class RobotRL(object):
             return
 
         ##time.sleep(0.1)
-        rospy.sleep(0.1)
+        rospy.sleep(0.2)
+        
+        twist=Twist()
+        twist_vel.linear.x=0.0
+        twist_vel.angular.z=0.0
+        self.vel_pub.publish(twist)
 
         # Get reward
         # Reward is distance between coke and robot optimal is 0.2 distance
@@ -242,8 +254,10 @@ class RobotRL(object):
         reward_observe=np.sum(image==1)
         reward_dist=1.0/((np.sqrt(dist)-0.35)**2+1e-1)
 
-        reward=reward_dist+0.1*reward_observe
+        reward=reward_dist*reward_observe
+
         self.rl_agent.recordReward(reward)
+        self.total_episode_reward=self.total_episode_reward+reward
 
         ## After fixed episode length learn
         ## (should also learn if robot completes dropping off?)
@@ -269,7 +283,13 @@ class RobotRL(object):
         if self.total_eps>self.max_eps:# or grab:
             self.total_eps=0
             self.rl_agent.saveNets()
-            self.resetWorld()
+            reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
+            self.f.write(str(self.total_episode_reward))
+            self.f.write('\n')
+            self.f.flush()
+            self.total_episode_reward=0
+            reset_world()
+            ##self.resetWorld()
         else:
             self.total_eps=self.total_eps+1
 
