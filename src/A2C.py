@@ -41,7 +41,6 @@ class A2C:
         self.reward_history=[]
 
 ######## Creating DNN models for DRL #######
-
     def createActorModel(self):
         ## Create actor network
         inputs = layers.Input(shape=(self.state_size,))
@@ -75,7 +74,6 @@ class A2C:
         return critic_net
 
 ####### Step in the world ######
-
     ## Assume sigma is diagonal covariance
     def multiVariateDistSample(self, mu, sigma):
         tfd=tfp.distributions
@@ -126,7 +124,6 @@ class A2C:
         self.reward_history.append(reward)
 
 ###### Learning #######
-
     def actorLossFunc(self,log_prob, adv):
         loss=tf.convert_to_tensor(-log_prob*adv)
         return loss
@@ -178,7 +175,6 @@ class A2C:
         #print(critic_loss)
         grads = tape.gradient(critic_loss, self.critic.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.critic.trainable_variables))
-
 
     def clearHistory(self):
         self.state_history=[]

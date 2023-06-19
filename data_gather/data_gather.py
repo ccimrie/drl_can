@@ -7,12 +7,25 @@ import csv
 ## Generate sdf files
 # arena.sdf=arena.txt+x*coke.txt+y*light.txt+close.txt
 
-N=10000-768-676-446-48
+N=5e4
 count=0
+
+
+limit_max=0.75
+diff_max=3.0
+
 ## Ensure sudo
 os.system('sudo ls')
 
 while count<N:
+
+	# limit=np.random.uniform(0.2, 1.0)*limit_max
+	limit=limit_max
+	diff_x=(1-2*np.random.rand())*diff_max
+	# diff_x=0.0
+	diff_y=(1-2*np.random.rand())*diff_max
+	# diff_y=0.0
+
 	print("Count: "+str(count)+"/"+str(N))
 	f_full=open('arena.sdf','w')
 	f_base=open('arena.txt','r').read()
@@ -27,13 +40,13 @@ while count<N:
 		coke_inital='<model name=\'coke_'+str(i)+'\'>\n'
 		pose_str=''
 		## randomise x,y
-		x=(1-2*np.random.rand())*4.65
-		y=(1-2*np.random.rand())*4.65
+		x=(1-2*np.random.rand())*limit+diff_x
+		y=(1-2*np.random.rand())*limit+diff_y
 		bound=(x>2.85 and y>2.85)
 		# print(bound)
 		while bound:
-			x=(1-2*np.random.rand())*4.65
-			y=(1-2*np.random.rand())*4.65
+			x=(1-2*np.random.rand())*limit+diff_x
+			y=(1-2*np.random.rand())*limit+diff_y
 			bound=(x>2.85 and y>2.85)
 
 		# x=0.1
@@ -54,13 +67,13 @@ while count<N:
 		light_inital='<model name=\'light_'+str(i)+'\'>\n'
 		pose_str=''
 		## randomise x,y
-		x=(1-2*np.random.rand())*4.65
-		y=(1-2*np.random.rand())*4.65
+		x=(1-2*np.random.rand())*limit+diff_x
+		y=(1-2*np.random.rand())*limit+diff_y
 		bound=(x>2.85 and y>2.85)
 		# print(bound)
 		while bound:
-			x=(1-2*np.random.rand())*4.65
-			y=(1-2*np.random.rand())*4.65
+			x=(1-2*np.random.rand())*limit+diff_x
+			y=(1-2*np.random.rand())*limit+diff_y
 			bound=(x>2.85 and y>2.85)
 
 		pose_str=pose_str+str(x)+' '+str(y)+' '
@@ -75,12 +88,12 @@ while count<N:
 	camera_initial='<model name=\'camera\'>\n'
 	pose_str=''
 	## randomise x,y
-	x=(1-2*np.random.rand())*4.65
-	y=(1-2*np.random.rand())*4.65
+	x=(1-2*np.random.rand())*limit+diff_x
+	y=(1-2*np.random.rand())*limit+diff_y
 	bound=(x>2.85 and y>2.85)
 	while bound:
-		x=(1-2*np.random.rand())*4.65
-		y=(1-2*np.random.rand())*4.65
+		x=(1-2*np.random.rand())*limit+diff_x
+		y=(1-2*np.random.rand())*limit+diff_y
 		bound=(x>2.85 and y>2.85)
 	pose_str=pose_str+str(x)+' '+str(y)+' '
 	## z, ax, ay is 0
@@ -96,7 +109,7 @@ while count<N:
 	f_full.close()
 
 	## Launch IGN for a few seconds
-	p=subprocess.Popen("ls dataset/images/ | wc -l", stdout=subprocess.PIPE, shell=True)
+	p=subprocess.Popen("ls dataset/boxes/ | wc -l", stdout=subprocess.PIPE, shell=True)
 	s=p.communicate()[0]
 	number=s.decode("utf-8")
 	number=int(number.split("\n")[0])
@@ -104,11 +117,13 @@ while count<N:
 	completed=0
 	os.system('ign gazebo -r arena.sdf &')
 	while not completed:
+		print("STILL GOING")
 		# os.system('ls | wc -l')
-		p=subprocess.Popen("ls dataset/images/ | wc -l", stdout=subprocess.PIPE, shell=True)
+		p=subprocess.Popen("ls dataset/boxes/ | wc -l", stdout=subprocess.PIPE, shell=True)
 		s=p.communicate()[0]
 		a=s.decode("utf-8")
 		a=int(a.split("\n")[0])
+		print(number, a)
 		if a>number:
 			completed=1
 
@@ -135,15 +150,17 @@ while count<N:
 				subprocess.run(["sudo", "kill","-9",i])
 
 	## Check if completed
-	last_csv = sorted(list(filter(lambda x: '.csv' in x, os.listdir('dataset/boxes/'))))[-1]
-	
+	last_csv = sorted(list(filter(lambda x: '.csv' in x, os.listdir('dataset/boxes/'))))[-1]	
+	# print("STARTING process")
+	# print(last_csv)
 	file=open('dataset/boxes/'+last_csv)
 	csvreader=csv.reader(file)
 	items=sum(1 for row in csvreader)
+	# print(items)
 	if items>1:
 		count=count+1
 	else:
-		print(csv)
+		# print(csv)
 		os.remove('dataset/boxes/'+last_csv)
 		os.remove('dataset/images/image'+last_csv[5:-3]+'png')
 

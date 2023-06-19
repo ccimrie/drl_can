@@ -668,8 +668,424 @@
         <falloff>0</falloff>
       </spot>
     </light>
+<model name='coke_0'>
+<pose> 2.5460237734025926 -0.8947023490982103 0 0 0 1.3428199899144944 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_1'>
+<pose> 2.9902120447969542 -0.9682349911519692 0 0 0 5.406316495127012 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_2'>
+<pose> 2.1814229748695912 -1.7816322041547088 0 0 0 1.5579393369413672 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_3'>
+<pose> 3.3809008028931506 -2.1583355610192236 0 0 0 6.003553893303458 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_4'>
+<pose> 3.5441015637375815 -1.1767779151665994 0 0 0 2.0650444180560794 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_5'>
+<pose> 3.000026214638232 -1.4269974407189119 0 0 0 6.096186986916386 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_6'>
+<pose> 3.0334758052280004 -2.2264213790818657 0 0 0 0.26307758470738635 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
+<model name='coke_7'>
+<pose> 3.371847778742837 -1.5176617158855559 0 0 0 0.3342988323338399 </pose>
+  <link name="link">
+    <inertial>
+      <pose>0 0 0.06 0 0 0</pose>
+      <mass>0.014</mass>
+      <inertia>
+        <ixx>0.00055575</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00055575</iyy>
+        <iyz>0</iyz>
+        <izz>0.0001755</izz>
+      </inertia>
+    </inertial>
+    <collision name="collision">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>30.0</mu>
+            <mu2>30.0</mu2>
+          </ode>
+        </friction>
+        <contact>
+          <ode>
+            <kp>10000000.0</kp>
+            <kd>1.0</kd>
+            <min_depth>0.001</min_depth>
+            <max_vel>0.1</max_vel>
+          </ode>
+        </contact>
+      </surface>
+    </collision>
+    <visual name="visual">
+      <pose>0.003937 0.0047244 -0.18 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>coke_can.dae</uri>
+        </mesh>
+      </geometry>
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+          <label>20</label>
+        </plugin>
+    </visual>
+  </link>
+</model>
 <model name='light_0'>
-<pose> -1.188988299538598 0.9610324568234314 0 0 0 0 </pose>
+<pose> 3.5879323729811583 -1.2050745597364338 0 0 0 0 </pose>
   <static>false</static>
   <link name="base">
     <pose>0.0 0.0 0.02 0.0 0 0</pose>
@@ -764,7 +1180,7 @@
   </joint>
 </model>
 <model name='light_1'>
-<pose> 1.8275368668417493 -0.8986188677094197 0 0 0 0 </pose>
+<pose> 2.528803968862025 -0.7812189479296932 0 0 0 0 </pose>
   <static>false</static>
   <link name="base">
     <pose>0.0 0.0 0.02 0.0 0 0</pose>
@@ -859,7 +1275,292 @@
   </joint>
 </model>
 <model name='light_2'>
-<pose> -0.9337534234627669 3.6244913527758182 0 0 0 0 </pose>
+<pose> 2.389768868107743 -1.0196731956115057 0 0 0 0 </pose>
+  <static>false</static>
+  <link name="base">
+    <pose>0.0 0.0 0.02 0.0 0 0</pose>
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.04</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass>10</mass>
+      <inertia>
+       <ixx>0.004395833333333333</ixx>
+       <ixy>0.0</ixy>
+       <ixz>0.0</ixz>
+       <iyy>0.004395833333333333</iyy>
+       <iyz>0.0</iyz>
+       <izz>0.006125</izz>
+     </inertia>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.04</length>
+        </cylinder>
+      </geometry>
+      <material> <!-- LED material -->
+        <ambient>0.4 0.4 0.4 1</ambient>
+        <diffuse>0.4 0.4 0.4 1</diffuse>
+        <specular>0.4 0.4 0.4 0</specular>
+        <emissive>0.6 0.6 0.4 1</emissive>
+      </material> <!-- End LED material -->
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+        <label>10</label>
+      </plugin>
+    </visual>
+  </link>
+
+  <link name="light">
+    <pose>0 0. 0.09 0 0 0</pose>
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.1</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass>10</mass>
+      <inertia>
+       <ixx>0.01139583333333333</ixx>
+       <ixy>0.0</ixy>
+       <ixz>0.0</ixz>
+       <iyy>0.01139583333333333</iyy>
+       <iyz>0.0</iyz>
+       <izz>0.006125</izz>
+     </inertia>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.1</length>
+        </cylinder>
+      </geometry>
+      <material> <!-- LED material -->
+        <ambient>0 0 0 1</ambient>
+        <diffuse>0 0 0 1</diffuse>
+        <specular>0 0 0 0</specular>
+        <emissive>1 0.5 0 1</emissive>
+      </material> <!-- End LED material -->
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+        <label>10</label>
+      </plugin>
+    </visual>
+  </link>
+
+  <visual name="visual">
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>10</label>
+    </plugin>
+  </visual>
+  
+  <joint name="light_joint" type="fixed">
+    <pose>0 0 -0.05 .0 0 0</pose>
+    <child>light</child>
+    <parent>base</parent>
+  </joint>
+</model>
+<model name='light_3'>
+<pose> 3.0132981941327213 -0.8700538743807145 0 0 0 0 </pose>
+  <static>false</static>
+  <link name="base">
+    <pose>0.0 0.0 0.02 0.0 0 0</pose>
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.04</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass>10</mass>
+      <inertia>
+       <ixx>0.004395833333333333</ixx>
+       <ixy>0.0</ixy>
+       <ixz>0.0</ixz>
+       <iyy>0.004395833333333333</iyy>
+       <iyz>0.0</iyz>
+       <izz>0.006125</izz>
+     </inertia>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.04</length>
+        </cylinder>
+      </geometry>
+      <material> <!-- LED material -->
+        <ambient>0.4 0.4 0.4 1</ambient>
+        <diffuse>0.4 0.4 0.4 1</diffuse>
+        <specular>0.4 0.4 0.4 0</specular>
+        <emissive>0.6 0.6 0.4 1</emissive>
+      </material> <!-- End LED material -->
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+        <label>10</label>
+      </plugin>
+    </visual>
+  </link>
+
+  <link name="light">
+    <pose>0 0. 0.09 0 0 0</pose>
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.1</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass>10</mass>
+      <inertia>
+       <ixx>0.01139583333333333</ixx>
+       <ixy>0.0</ixy>
+       <ixz>0.0</ixz>
+       <iyy>0.01139583333333333</iyy>
+       <iyz>0.0</iyz>
+       <izz>0.006125</izz>
+     </inertia>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.1</length>
+        </cylinder>
+      </geometry>
+      <material> <!-- LED material -->
+        <ambient>0 0 0 1</ambient>
+        <diffuse>0 0 0 1</diffuse>
+        <specular>0 0 0 0</specular>
+        <emissive>1 0.5 0 1</emissive>
+      </material> <!-- End LED material -->
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+        <label>10</label>
+      </plugin>
+    </visual>
+  </link>
+
+  <visual name="visual">
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>10</label>
+    </plugin>
+  </visual>
+  
+  <joint name="light_joint" type="fixed">
+    <pose>0 0 -0.05 .0 0 0</pose>
+    <child>light</child>
+    <parent>base</parent>
+  </joint>
+</model>
+<model name='light_4'>
+<pose> 2.5302363729279316 -1.9296457743530606 0 0 0 0 </pose>
+  <static>false</static>
+  <link name="base">
+    <pose>0.0 0.0 0.02 0.0 0 0</pose>
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.04</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass>10</mass>
+      <inertia>
+       <ixx>0.004395833333333333</ixx>
+       <ixy>0.0</ixy>
+       <ixz>0.0</ixz>
+       <iyy>0.004395833333333333</iyy>
+       <iyz>0.0</iyz>
+       <izz>0.006125</izz>
+     </inertia>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.04</length>
+        </cylinder>
+      </geometry>
+      <material> <!-- LED material -->
+        <ambient>0.4 0.4 0.4 1</ambient>
+        <diffuse>0.4 0.4 0.4 1</diffuse>
+        <specular>0.4 0.4 0.4 0</specular>
+        <emissive>0.6 0.6 0.4 1</emissive>
+      </material> <!-- End LED material -->
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+        <label>10</label>
+      </plugin>
+    </visual>
+  </link>
+
+  <link name="light">
+    <pose>0 0. 0.09 0 0 0</pose>
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.1</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass>10</mass>
+      <inertia>
+       <ixx>0.01139583333333333</ixx>
+       <ixy>0.0</ixy>
+       <ixz>0.0</ixz>
+       <iyy>0.01139583333333333</iyy>
+       <iyz>0.0</iyz>
+       <izz>0.006125</izz>
+     </inertia>
+    </inertial>
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>.035</radius>
+          <length>.1</length>
+        </cylinder>
+      </geometry>
+      <material> <!-- LED material -->
+        <ambient>0 0 0 1</ambient>
+        <diffuse>0 0 0 1</diffuse>
+        <specular>0 0 0 0</specular>
+        <emissive>1 0.5 0 1</emissive>
+      </material> <!-- End LED material -->
+      <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+        <label>10</label>
+      </plugin>
+    </visual>
+  </link>
+
+  <visual name="visual">
+    <plugin filename="ignition-gazebo-label-system" name="ignition::gazebo::systems::Label">
+      <label>10</label>
+    </plugin>
+  </visual>
+  
+  <joint name="light_joint" type="fixed">
+    <pose>0 0 -0.05 .0 0 0</pose>
+    <child>light</child>
+    <parent>base</parent>
+  </joint>
+</model>
+<model name='light_5'>
+<pose> 2.2124817711436267 -1.1704841150021923 0 0 0 0 </pose>
   <static>false</static>
   <link name="base">
     <pose>0.0 0.0 0.02 0.0 0 0</pose>
@@ -954,7 +1655,7 @@
   </joint>
 </model>
 <model name='camera'>
-<pose> 1.5799072144351536 -1.4100100868799441 0 0 0 0.8434410350040322 </pose>
+<pose> 2.9610504382359415 -2.004233702019844 0 0 0 2.401006914713254 </pose>
 <!-- <model name="boundingbox_camera"> -->
      <pose>2 0 1.0 0 0.0 3.14</pose>
      <link name="link">

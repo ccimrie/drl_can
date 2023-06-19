@@ -9,10 +9,8 @@
           <ixx>0.00001995</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <!-- <iyy>0.00055575</iyy> -->
           <iyy>0.00001995</iyy>
           <iyz>0</iyz>
-          <!-- <izz>0.0001755</izz> -->
           <izz>0.0000063</izz>
         </inertia>
       </inertial>
@@ -21,8 +19,6 @@
         <geometry>
           <mesh>
             <uri>model://coke/coke_can.dae</uri>
-            <!-- <uri>model://coke_can.dae</uri> -->
-            <!-- <uri>file://home/colin/software/rl-verif/src/drl_can/models/coke/coke_can.dae</uri> -->
           </mesh>
         </geometry>
         <surface>
@@ -47,8 +43,6 @@
         <geometry>
           <mesh>
             <uri>model://coke/coke_can.dae</uri>
-            <!-- <uri>model://coke_can.dae</uri> -->
-            <!-- <uri>file://home/colin/software/rl-verif/src/drl_can/models/coke/coke_can.dae</uri> -->
           </mesh>
         </geometry>
       </visual>

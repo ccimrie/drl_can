@@ -1,52 +1,46 @@
 <launch>
-    <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [waffle, waffle_pi]"/>
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [waffle, waffle_pi]"/>
   <arg name="gui" default="true"/>
   <arg name="paused" default="true"/>
   <arg name="use_sim_time" default="true"/>
 
-  <arg name="coke_no_init" default="1"/>
-  <arg name="light_no_init" default="0"/>
 
   <!-- Arguments -->
   <!-- <arg name="model" default="waffle_pi" doc="model type [burger, waffle, waffle_pi]"/> -->
-  <arg name="map_file" default="$(find drl_can)/maps/map_world_edit/map_world.yaml"/>
+  <arg name="map_file" default="$(find drl_can)/maps/map_world.yaml"/>
   <arg name="open_rviz" default="true"/>
   <arg name="move_forward_only" default="false"/>
 
   <!-- Turtlebot3 -->
-  <arg name="urdf_file" default="$(find xacro)/xacro --inorder '$(find turtlebot3_manipulation_description)/urdf/turtlebot3_manipulation_robot.urdf.xacro'" />
+  <arg name="urdf_file" default="$(find xacro)/xacro --inorder '$(find turtlebot3_description)/urdf/turtlebot3_waffle_pi.urdf.xacro'" />
   <param name="robot_description" command="$(arg urdf_file)" />
 
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
   <param name="publish_frequency" type="double" value="50.0" />
   </node>
 
-  <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="laser_filter" output="screen" >
-    <rosparam command="load" file="$(find turtlebot3_manipulation_slam)/config/scan_data_filter.yaml" />
-  </node>  
-
   <!-- Map server -->
   <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
 
   <!-- AMCL -->
-  <include file="$(find turtlebot3_manipulation_navigation)/launch/amcl.launch">
+  <include file="$(find turtlebot3_navigation)/launch/amcl.launch">
     <arg name="initial_pose_x"  value="3.5" />
     <arg name="initial_pose_y"  value="3.5" />
     <arg name="initial_pose_a"  value="-2.356" />
   </include>
 
   <!-- move_base -->
-  <include file="$(find turtlebot3_manipulation_navigation)/launch/move_base.launch">
+  <include file="$(find turtlebot3_navigation)/launch/move_base.launch">
     <arg name="model" value="$(arg model)" />
     <arg name="move_forward_only" value="$(arg move_forward_only)"/>
   </include>
 
-  <rosparam file="$(find turtlebot3_manipulation_gazebo)/config/gazebo_controller.yaml" command="load"/>
+  <!-- <rosparam file="$(find turtlebot3_gazebo)/config/gazebo_controller.yaml" command="load"/> -->
 
   <!-- startup simulated world -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <!-- <arg name="world_name" value="$(find drl_can)/worlds/simple_world.world"/> -->
-    <arg name="world_name" value="$(find drl_can)/worlds/blank_world.world"/>
+    <!-- <arg name="world_name" value="$(find NAME_OF_PACKAGE)/PATH_TO_WORLD/blank_world.world"/> -->
     <arg name="paused" value="$(arg paused)"/>
     <arg name="gui" value="$(arg gui)"/>
     <arg name="use_sim_time" value="$(arg use_sim_time)"/>
@@ -63,29 +57,10 @@
   <node name="$(eval 'spawn_gazebo_drop')" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
     args="-sdf -file $(find drl_can)/models/drop_box/model.sdf -model drop_box -x 0.045 -y 0 -z 0.06"/>
 
-  <!-- send robot urdf to param server -->
-  <include file="$(find turtlebot3_manipulation_description)/launch/turtlebot3_manipulation_upload.launch">
-    <arg name="model" value="$(arg model)"/>
-  </include>
+   <param name="robot_description" command="$(find xacro)/xacro $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
 
   <!-- push robot_description to factory and spawn robot in gazebo -->
   <node name="spawn_gazebo_robot" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-    args="-urdf -param robot_description -model robot -x 0.0 -y 0.0 -Y 0.0 -J joint1 0.0 -J joint2 0.0 -J joint3 0.0 -J joint4 0.0 -J gripper 0.0 -J gripper_sub 0.0"/>
-
-  <!-- controller utils -->
-  <include file="$(find turtlebot3_manipulation_gazebo)/launch/controller_utils.launch"/>
-
-  <!-- run moveit config -->
-  <include file="$(find turtlebot3_manipulation_moveit_config)/launch/move_group.launch"/>
-
-  <!-- run controllers -->
-  <include file="$(find turtlebot3_manipulation_gazebo)/launch/turtlebot3_manipulation_controller.launch"/>
-
-<!--   <node name="spawn_gazebo_coke" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-    args="-sdf -file $(find drl_can)/models/coke/model.sdf -model coke -x 0.3 -y 0.0 -z 0.0"/> -->
-
-<!-- push coke_can description to factory and spawn in Gazebo -->
-   <node name="spawn_gazebo_coke" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-    args="-sdf -file $(find drl_can)/models/coke/model.sdf -model coke_1 -x 1.0 -y 0.0 -z 0.00 -Y 0.0"/> 
+    args="-urdf -param robot_description -model robot -x 3.5 -y 3.5 -Y -2.356"/>
 
 </launch>
