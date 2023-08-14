@@ -2,6 +2,7 @@ import numpy as np
 import rospy
 import moveit_commander
 import moveit_msgs.msg
+from std_msgs.msg import Int8
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
 
@@ -17,9 +18,26 @@ class RobotArm(object):
         self.acquired=0
 
         self.cmd_vel=rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+        self.arm_update_pub=rospy.Publisher('/arm_motion', Int8, queue_size=1)
+        self.arm_update_sub=rospy.Subscriber('/arm_motion', Int8, self.armUpdate, queue_size=1)
+
+
+    def armUpdate(self, data):
+        arm_temp=data.data
+        if arm_temp==1:
+            twist_vel=Twist()
+            twist_vel.linear.x=0.0
+            twist_vel.angular.z=0.0
+            self.vel_pub.publish(twist_vel)
+            self.moveArmHome()
+            self.gripperOpen()
+            ## Initiate grab
+            self.moveArmAngle([1.1,-0.1,-1.0])
+            self.registerArmCam()
 
     def unregisterArmCam(self):
         self.cam_arm.unregister()
+        self.arm.arm_update_pub(0)
 
     def registerArmCam(self):
         self.cam_arm=rospy.Subscriber('/camera_arm/rgb/image_raw', Image, self.armImageSub, queue_size=1)
@@ -66,7 +84,8 @@ class RobotArm(object):
 
             if pose.position.x>0.27:
                 self.acquired=1
-                self.cam_arm.unregister()
+                # self.cam_arm.unregister()
+                self.unregisterArmCam()
 
 
     ## In radians

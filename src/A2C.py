@@ -16,7 +16,9 @@ class A2C:
     def __init__(self, _num_actions, _state_size):
         ## RL params
         self.gamma=0.99
-        self.optimizer=keras.optimizers.Adam(lr=5e-6)
+        # self.optimizer=keras.optimizers.Adam(lr=5e-6)
+        # lr=5e-6
+        self.optimizer=keras.optimizers.legacy.Adam(learning_rate=1e-3)
         self.huber_loss = keras.losses.Huber()
         self.num_actions=_num_actions
         self.state_size=_state_size
@@ -138,6 +140,7 @@ class A2C:
 
     ## Need to be done before critic learning due to TD
     def learnActor(self):
+        print("Training actor network")
         returns_true=self.calcValue()
         history=zip(self.state_history, self.action_history, self.value_pred_history, returns_true)
         with tf.GradientTape() as tape:
@@ -160,9 +163,11 @@ class A2C:
         #print(actor_loss, act, prob, log_prob, adv)
         grads = tape.gradient(actor_loss, self.actor.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.actor.trainable_variables))
+        # print("Trained actor network")
 
     ## Needs next state
     def learnCritic(self):
+        print("Training critic network")
         returns_true=self.calcValue()
         history=zip(self.state_history, returns_true)
         with tf.GradientTape() as tape:
@@ -175,6 +180,7 @@ class A2C:
         #print(critic_loss)
         grads = tape.gradient(critic_loss, self.critic.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.critic.trainable_variables))
+        # print("Trained critic network")
 
     def clearHistory(self):
         self.state_history=[]
@@ -195,8 +201,10 @@ class A2C:
 
     def saveNets(self):
         path=os.environ["MODEL_PATH"]
+        print("Attempting to save networks")
         if path=="":
             print("No path defined, model not saved")
         else:
             self.actor.save(path+"actor_model.h5")
             self.critic.save(path+"critic_model.h5")
+            print("Succesfully saved networks!")

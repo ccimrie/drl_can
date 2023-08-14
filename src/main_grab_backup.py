@@ -3,8 +3,8 @@ import numpy as np
 import rospy
 # import roslib; roslib.load_manifest('gazebo')
 import time
-import cv2
 from cv_bridge import CvBridge
+import cv2
 
 from A2C import A2C
 
@@ -36,8 +36,11 @@ import os
 
 ## Custom classes
 from gazebo_utils import GazeboUtils as GU
+print("HERE1")
 from turtlebot_movement import TurtlebotMovement as NAV
+print("HERE2")
 from robot_arm import RobotArm
+print("HERE3")
 
 class RobotRL(object):
 
@@ -60,7 +63,7 @@ class RobotRL(object):
             self.light_list.append(light)
 
         # self.state_size=20
-        self.state_size=2
+        self.state_size=4
         width=640
         height=480
 
@@ -79,7 +82,7 @@ class RobotRL(object):
         self.rl_agent=A2C(2, 2*self.width_state_size*self.height_state_size)
         print("Success!")
         self.episode=0
-        self.learn_eps=1000
+        self.learn_eps=500
         self.total_eps=0
 
         eps_no=1
@@ -88,7 +91,7 @@ class RobotRL(object):
         self.f=open('rewards.txt', 'w+')
 
         ## For noetic/python3
-        # self.optimizer=keras.optimizers.Adam(learning_rate=0.01)
+        self.optimizer=keras.optimizers.Adam(learning_rate=0.01)
         ## For melodic/python2
         ## self.optimizer=keras.optimizers.Adam(lr=0.01)
         self.arm_trigger=0
@@ -107,12 +110,10 @@ class RobotRL(object):
         self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
         self.arm_update_pub=rospy.Publisher("/arm_motion",Int8,queue_size=1)
         print("Publishers setup")
-
-        self.gu.resetWorld()
-
         ## Subscribers
         # rospy.Subscriber("/camera/rgb/image_raw", Image, self.imageSub)
         rospy.Subscriber("/arm_motion", Int8, self.armUpdate)
+
         ## Need to get number of objects detected, if >0 see what latest bounding boxes are
         rospy.Subscriber("/darknet_ros/found_object", ObjectCount, self.imageSub, queue_size=1)
         rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.storeBoxes, queue_size=1)
@@ -124,10 +125,10 @@ class RobotRL(object):
         if arm_temp==0:
             self.moveArmHome()
             print("Arm change: check for reward")
-            pos_coke=self.gu.gms_client("coke_1","link").pose.position
+            pos_coke=self.gms_client("coke_1","link").pose.position
             ## Assume last reward step was for grab attempt
             if pos_coke.z>0.1:
-                self.rl_agent.recordReward(100)
+                self.rewards_history[-1]=self.rewards_history[-1]+100
                 twist=Twist()
                 twist.linear.x=0.0
                 twist.angular.z=0.0
@@ -139,7 +140,7 @@ class RobotRL(object):
 
                 self.gu.resetWorld()
             else:
-                self.rl_agent.recordReward(-5)
+                self.rewards_history[-1]=self.rewards_history[-1]-5
                 self.moveArmHome()
         self.arm_trigger=arm_temp
 
@@ -148,8 +149,8 @@ class RobotRL(object):
         width=640.0
         height=480.0
 
-        # self.coke_box_state[:]=0
-        # self.light_box_state[:]=0
+        self.coke_box_state[:]=0
+        self.light_box_state[:]=0
 
         for box in data.bounding_boxes:
             # print("Doing a box!", self.width_state_size, self.height_state_size)
@@ -190,9 +191,6 @@ class RobotRL(object):
         image_light=self.light_box_state.flatten()      
         image=np.append(image_coke,image_light)
 
-        cv2.imshow('test',self.coke_box_state)
-        cv2.waitKey(1)
-
         ## Send state to the networks and get actions
         act=self.rl_agent.step(image)
 
@@ -205,7 +203,6 @@ class RobotRL(object):
         
         grab_thresh=0.05
         if abs(act[0])>grab_thresh or abs(act[1])>grab_thresh:
-        # if True:
             twist_vel.linear.x=act[0]*0.15
             twist_vel.angular.z=act[1]*0.15
             self.vel_pub.publish(twist_vel)
@@ -214,27 +211,17 @@ class RobotRL(object):
             twist_vel.angular.z=0.0
             self.vel_pub.publish(twist_vel)
 
-            pos_robot=self.gu.gms_client("robot", "").pose.position
+            pos_robot=self.gms_client("robot", "").pose.position
             reward=0
 
-            reward_observe=float(np.sum(image_coke>0))/self.state_size
-            if reward_observe==0:
-                reward=-1
-            else:
-                # reward_dist=1.0/((np.sqrt(dist)-0.35)**2+1e-2)
-                reward_dist=float(np.sum(image_coke==1))/self.state_size
+            ideal_dist=0.4
 
-            # reward=reward_dist*reward_observe
-            reward=reward_dist
+            for i in np.arange(self.coke_no):
+                pos_coke=self.gms_client("coke_"+str(i),"link").pose.position
+                dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
+                reward_temp=1.0/((np.sqrt(dist)-0.4)**2+1e-1)
 
-            # ideal_dist=0.4
-
-            # for i in np.arange(self.coke_no):
-            #     pos_coke=self.gu.gms_client("coke_"+str(i),"link").pose.position
-            #     dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
-            #     reward_temp=1.0/((np.sqrt(dist)-0.4)**2+1e-1)
-
-            self.rl_agent.recordReward(reward)
+            self.rewards_history.append(reward)
             self.episode=self.episode+1
             self.arm_update_pub.publish(1)
             return
@@ -248,40 +235,33 @@ class RobotRL(object):
         # Get reward
         # Reward is distance between coke and robot optimal is 0.2 distance
         ## Assumption: always at least one coke can
-        pos_coke=self.gu.gms_client("coke_1","").pose.position
-        pos_robot=self.gu.gms_client("robot", "").pose.position
+        pos_coke=self.gms_client("coke_1","").pose.position
+        pos_robot=self.gms_client("robot", "").pose.position
 
-        # dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
+        dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
 
-        # for i in self.coke_list[1:]:
-        #     pos_coke_temp=self.gu.gms_client(i,"").pose.position
-        #     dist_temp=(pos_coke_temp.x-pos_robot.x)**2+(pos_coke_temp.y-pos_robot.y)**2
-        #     if dist_temp<dist:
-        #         dist=dist_temp
-        #         pos_coke=pos_coke_temp
+        for i in self.coke_list[1:]:
+            pos_coke_temp=self.gms_client(i,"").pose.position
+            dist_temp=(pos_coke_temp.x-pos_robot.x)**2+(pos_coke_temp.y-pos_robot.y)**2
+            if dist_temp<dist:
+                dist=dist_temp
+                pos_coke=pos_coke_temp
         
         reward_observe=float(np.sum(image_coke>0))/self.state_size
         if reward_observe==0:
             reward=-1
         else:
-            # reward_dist=1.0/((np.sqrt(dist)-0.35)**2+1e-2)
-            reward_dist=float(np.sum(image_coke==1))/self.state_size
-
+            reward_dist=1.0/((np.sqrt(dist)-0.35)**2+1e-2)
             # reward=reward_dist*reward_observe
             reward=reward_dist
         
-
-        ## Check for collision
-        terminate=0
-
-
         self.rl_agent.recordReward(reward)
         self.total_episode_reward=self.total_episode_reward+reward
 
         ## Add 'state decay'
         memory_thresh=0.2
-        self.coke_box_state=self.coke_box_state*0.7
-        self.light_box_state=self.light_box_state*0.7
+        self.coke_box_state=self.coke_box_state*0.9
+        self.light_box_state=self.light_box_state*0.9
         self.coke_box_state[self.coke_box_state<memory_thresh]=0
         self.light_box_state[self.light_box_state<memory_thresh]=0
 
@@ -297,11 +277,16 @@ class RobotRL(object):
             self.rl_agent.learnCritic()
             self.rl_agent.clearHistory()
 
-            self.rl_agent.saveNets()
+            # path=os.environ["MODEL_PATH"]
+            # if path=="":
+            #     print("No path defined, model not saved")
+            # else:
+            #     self.rlDNN.save(path+"model_nav.h5")
+            # self.resetWorld()
             self.episode=0
         else:
             self.episode=self.episode+1
-        if self.total_eps>self.max_eps or terminate:# or grab:
+        if self.total_eps>self.max_eps:# or grab:
             self.total_eps=0
             self.rl_agent.saveNets()
             self.f.write(str(self.total_episode_reward))
@@ -319,8 +304,11 @@ class RobotRL(object):
             self.loop_rate.sleep()
 
 if __name__=='__main__':
+    print("IN METHOD")
     coke_no=int(sys.argv[1])
     light_no=int(sys.argv[2])
+    print("STARTING NODE")
     rospy.init_node("robotRL", anonymous=True)
+    print("Making robot")
     robot=RobotRL(coke_no, light_no)
     robot.start()

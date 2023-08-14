@@ -51,20 +51,20 @@ class GazeboUtils(object):
 
         ## Reset coke/light position
         reset_world()
-        self.gripperOpen()
-        self.moveArmHome()
 
         ## Set robot's position
-        self.smsClient('robot', [3.5, 3.5],-1.57)
+        self.smsClient('robot', [3.5, 3.5,0],np.pi*(-3/4.0))
         pos_robot=self.gms_client("robot", "").pose.position
         ont_robot=self.gms_client("robot","").pose.orientation
         self.setInitialPose([pos_robot.x,pos_robot.y,pos_robot.z],[ont_robot.z,ont_robot.w])
         ## Dimension is 10x10 ([[-5:5],[-5:5]]) arena (harcoded for now)
         ## Make coke spawn area smaller; easier for camera to see
-        for i in self.coke_list:
-            self.smsClient(i, (1-2*np.random.random(2))*3,(1-2*np.random.random())*np.pi)
-        for j in self.light_list:
-            self.smsClient(j, (1-2*np.random.random(2))*3,0)
+
+        ## TODO make for multiple objects
+        # for i in self.coke_list:
+        #     self.smsClient(i, (1-2*np.random.random(2))*3,(1-2*np.random.random())*np.pi)
+        # for j in self.light_list:
+        #     self.smsClient(j, (1-2*np.random.random(2))*3,0)
 
     def setInitialPose(self, pos, orientation):
         pose = geometry_msgs.msg.PoseWithCovarianceStamped()
