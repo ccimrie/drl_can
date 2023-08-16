@@ -45,12 +45,12 @@ class GazeboUtils(object):
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
 
-    def resetWorld(self):
+    def resetWorld(self, coke_list, light_list):
         print("Resetting world!")
-        reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
+        # reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
 
         ## Reset coke/light position
-        reset_world()
+        # reset_world()
 
         ## Set robot's position
         self.smsClient('robot', [3.5, 3.5,0],np.pi*(-3/4.0))
@@ -61,10 +61,29 @@ class GazeboUtils(object):
         ## Make coke spawn area smaller; easier for camera to see
 
         ## TODO make for multiple objects
-        # for i in self.coke_list:
-        #     self.smsClient(i, (1-2*np.random.random(2))*3,(1-2*np.random.random())*np.pi)
-        # for j in self.light_list:
-        #     self.smsClient(j, (1-2*np.random.random(2))*3,0)
+        print(coke_list, light_list)
+        for i in coke_list:
+            self.smsClient(i, np.append((1-2*np.random.random(2))*3,[0]),(1-2*np.random.random())*np.pi)
+        for j in light_list:
+            self.smsClient(j, np.append((1-2*np.random.random(2))*3,[0]),0)
+
+    def resetWorldTest(self):
+        print("Resetting world!")
+        # reset_world = rospy.ServiceProxy('/gazebo/reset_world', Empty)
+
+        ## Reset coke/light position
+        # reset_world()
+
+        ## Set robot's position
+        self.smsClient('robot', [3.5, 3.5,0],np.pi*(-3/4.0))
+        pos_robot=self.gms_client("robot", "").pose.position
+        ont_robot=self.gms_client("robot","").pose.orientation
+        self.setInitialPose([pos_robot.x,pos_robot.y,pos_robot.z],[ont_robot.z,ont_robot.w])
+        ## Dimension is 10x10 ([[-5:5],[-5:5]]) arena (harcoded for now)
+        ## Make coke spawn area smaller; easier for camera to see
+
+        self.smsClient('coke_1', [0,1,0],(1-2*np.random.random())*np.pi)
+        self.smsClient('light_1', [0,0,0],0)
 
     def setInitialPose(self, pos, orientation):
         pose = geometry_msgs.msg.PoseWithCovarianceStamped()

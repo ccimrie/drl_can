@@ -18,7 +18,8 @@ class A2C:
         self.gamma=0.99
         # self.optimizer=keras.optimizers.Adam(lr=5e-6)
         # lr=5e-6
-        self.optimizer=keras.optimizers.legacy.Adam(learning_rate=1e-3)
+        # self.optimizer=keras.optimizers.legacy.Adam(learning_rate=5e-6)
+        self.optimizer=keras.optimizers.legacy.Adam(learning_rate=0.2)
         self.huber_loss = keras.losses.Huber()
         self.num_actions=_num_actions
         self.state_size=_state_size
@@ -49,9 +50,9 @@ class A2C:
         
         hl_1 = layers.Dense(256, activation="relu")(inputs)
         hl_2 = layers.Dense(256, activation="relu")(hl_1)
-        hl_3 = layers.Dense(512, activation="relu")(hl_2)
-        hl_4 = layers.Dense(512, activation="relu")(hl_3)
-        hl_5 = layers.Dense(512, activation="relu")(hl_4)
+        hl_3 = layers.Dense(256, activation="relu")(hl_2)
+        hl_4 = layers.Dense(256, activation="relu")(hl_3)
+        hl_5 = layers.Dense(256, activation="relu")(hl_4)
         hl_6 = layers.Dense(256, activation="relu")(hl_5)
 
         mu = layers.Dense(self.num_actions, activation="tanh")(hl_6)

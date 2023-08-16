@@ -85,12 +85,11 @@ class RobotRL(object):
         eps_no=1
         self.max_eps=self.learn_eps*eps_no
 
-        self.f=open('rewards.txt', 'w+')
+        if os.path.isfile('rewards.txt'):
+            self.f=open('rewards.txt', 'a')
+        else:
+            self.f=open('rewards.txt', 'w+')
 
-        ## For noetic/python3
-        # self.optimizer=keras.optimizers.Adam(learning_rate=0.01)
-        ## For melodic/python2
-        ## self.optimizer=keras.optimizers.Adam(lr=0.01)
         self.arm_trigger=0
         self.total_episode_reward=0
 
@@ -102,54 +101,58 @@ class RobotRL(object):
         print("Navigation success!")
         self.arm=RobotArm()  # Control of arm
         print("Arm success!")
+        ## reset arm
+        self.arm.moveArmHome()
 
         ## Publishers
         self.vel_pub=rospy.Publisher("/cmd_vel", Twist,queue_size=1)
         self.arm_update_pub=rospy.Publisher("/arm_motion",Int8,queue_size=1)
         print("Publishers setup")
 
-        self.gu.resetWorld()
+        self.simReset()
 
         ## Subscribers
         # rospy.Subscriber("/camera/rgb/image_raw", Image, self.imageSub)
-        rospy.Subscriber("/arm_motion", Int8, self.armUpdate)
+        rospy.Subscriber("/arm_motion", Int8, self.armUpdate, queue_size=1)
         ## Need to get number of objects detected, if >0 see what latest bounding boxes are
-        rospy.Subscriber("/darknet_ros/found_object", ObjectCount, self.imageSub, queue_size=1)
-        rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.storeBoxes, queue_size=1)
+        self.state_perception_sub=rospy.Subscriber("/darknet_ros/found_object", ObjectCount, self.imageSub, queue_size=1)
+        self.bounding_boxes_sub=rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.storeBoxes, queue_size=1)
         print("Subscribers setup")
 
     def armUpdate(self, data):
+        print("Changing arms!")
         arm_temp=data.data
-        print(self.arm_trigger)
         if arm_temp==0:
-            self.moveArmHome()
             print("Arm change: check for reward")
+            twist=Twist()
+            twist.linear.x=0.0
+            twist.angular.z=0.0
+            self.vel_pub.publish(twist)
             pos_coke=self.gu.gms_client("coke_1","link").pose.position
             ## Assume last reward step was for grab attempt
             if pos_coke.z>0.1:
-                self.rl_agent.recordReward(100)
-                twist=Twist()
-                twist.linear.x=0.0
-                twist.angular.z=0.0
-                self.vel_pub.publish(twist)
-                self.imageSubLearn()
-
-                ## Save RL network
-                ## TODO
-
-                self.gu.resetWorld()
+                reward=10
             else:
-                self.rl_agent.recordReward(-5)
-                self.moveArmHome()
-        self.arm_trigger=arm_temp
+                reward=-10
+            self.rl_agent.recordReward(reward)
+            self.total_episode_reward+=reward
+            self.trainAgent()
+            self.episodeEnd()
+            print("Resubscribing...")
+            self.state_perception_sub=rospy.Subscriber("/darknet_ros/found_object", ObjectCount, self.imageSub, queue_size=1)
+            self.bounding_boxes_sub=rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.storeBoxes, queue_size=1)
+            print("Success!")
+
+    def trainAgent(self):
+        self.rl_agent.learnActor()
+        self.rl_agent.learnCritic()
+        self.rl_agent.clearHistory()
 
     def storeBoxes(self,data):
+
         ##self.coke_box_state
         width=640.0
         height=480.0
-
-        # self.coke_box_state[:]=0
-        # self.light_box_state[:]=0
 
         for box in data.bounding_boxes:
             # print("Doing a box!", self.width_state_size, self.height_state_size)
@@ -169,19 +172,46 @@ class RobotRL(object):
                     for y in np.arange(ymin, ymax+1):
                         self.light_box_state[y,x]=1
 
-            #cv2.imshow('coke', self.coke_box_state)
-            #cv2.waitKey(1)
-            #for x in np.arange(xmin, xmax+1):
-            #    for y in np.arange(ymin, ymax+1):
-            #        if self.box_state[y,x]==0:
-            #            self.box_state[y,x]=val
-            #        elif self.box_state[y,x]!=val:
-            #            self.box_state[y,x]=3
+    ## Only consider cans in view
+    def checkCoke(self):
+        raspi_cam_angle=(np.pi/180.0)*(62.2/2.0) # radians
+        robot_pos=self.gu.gms_client('robot','link')
+        rotation_angle=2*np.arcsin(robot_pos.pose.orientation.z)
+        dist=-1
+        for coke in self.coke_list:
+            # print(coke)
+            coke_pos=self.gu.gms_client(coke,'link')
+            # print(coke_pos)
+            x=coke_pos.pose.position.x-robot_pos.pose.position.x
+            y=coke_pos.pose.position.y-robot_pos.pose.position.y
+            x_new=x*np.cos(-rotation_angle)-y*np.sin(-rotation_angle)
+            y_new=x*np.sin(-rotation_angle)+y*np.cos(-rotation_angle)
+            width_bound=x_new*np.tan(raspi_cam_angle)
+            if abs(y_new)<width_bound:
+                dist_temp=np.sqrt(x_new**2+y_new**2)
+                if dist==-1 or dist_temp<dist:
+                    dist=dist_temp
+        return dist
 
+    def calculateReward(self):
+        ## Check if system can 'see' cans
+        state=self.coke_box_state.copy()
+        reward_observe=(np.sum(state>0))
+        if reward_observe>0:
+            reward_cell=np.sum(state>0.75)/self.state_size
+            reward_dist=self.checkCoke()
+            ideal_dist=0.4
+            if not(reward_dist==-1):
+                reward_dist=(1.0/((reward_dist-ideal_dist)**2+1.0))
+            else:
+                reward_dist=0
+            # print(reward_dist, reward_cell)
+            return reward_dist+reward_cell
+        else:
+            return 0
+    
     def imageSub(self, data):
-        if self.arm_trigger==1:
-            return
-
+        # print("IMAGES")
         if self.episode%100==0:
             print(self.episode)
 
@@ -190,8 +220,9 @@ class RobotRL(object):
         image_light=self.light_box_state.flatten()      
         image=np.append(image_coke,image_light)
 
-        cv2.imshow('test',self.coke_box_state)
-        cv2.waitKey(1)
+        # image_scaled=cv2.resize(self.coke_box_state, dsize=(640,480), interpolation=cv2.INTER_NEAREST)
+        # cv2.imshow('test',image_scaled)
+        # cv2.waitKey(1)
 
         ## Send state to the networks and get actions
         act=self.rl_agent.step(image)
@@ -203,41 +234,33 @@ class RobotRL(object):
         # p=np.random.random()
         twist_vel=Twist()
         
-        grab_thresh=0.05
+        grab_thresh=0.2
         if abs(act[0])>grab_thresh or abs(act[1])>grab_thresh:
         # if True:
-            twist_vel.linear.x=act[0]*0.15
+            twist_vel.linear.x=act[0]*0.2
             twist_vel.angular.z=act[1]*0.15
             self.vel_pub.publish(twist_vel)
         else:
+            print(act)
             twist_vel.linear.x=0.0
             twist_vel.angular.z=0.0
             self.vel_pub.publish(twist_vel)
-
-            pos_robot=self.gu.gms_client("robot", "").pose.position
-            reward=0
-
-            reward_observe=float(np.sum(image_coke>0))/self.state_size
-            if reward_observe==0:
-                reward=-1
-            else:
-                # reward_dist=1.0/((np.sqrt(dist)-0.35)**2+1e-2)
-                reward_dist=float(np.sum(image_coke==1))/self.state_size
-
-            # reward=reward_dist*reward_observe
-            reward=reward_dist
-
-            # ideal_dist=0.4
-
-            # for i in np.arange(self.coke_no):
-            #     pos_coke=self.gu.gms_client("coke_"+str(i),"link").pose.position
-            #     dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
-            #     reward_temp=1.0/((np.sqrt(dist)-0.4)**2+1e-1)
-
-            self.rl_agent.recordReward(reward)
+            reward=self.calculateReward()
+            # self.rl_agent.recordReward(reward)
             self.episode=self.episode+1
+            print("Unsubscribing")
+            self.state_perception_sub.unregister()
+            self.bounding_boxes_sub.unregister()
+            # cv2.destroyAllWindows()
             self.arm_update_pub.publish(1)
             return
+
+        ## Add 'state decay'
+        memory_thresh=0.2
+        self.coke_box_state=self.coke_box_state*0.9
+        self.light_box_state=self.light_box_state*0.9
+        self.coke_box_state[self.coke_box_state<memory_thresh]=0
+        self.light_box_state[self.light_box_state<memory_thresh]=0
 
         rospy.sleep(0.1)
     
@@ -246,44 +269,14 @@ class RobotRL(object):
         self.vel_pub.publish(twist_vel)
 
         # Get reward
-        # Reward is distance between coke and robot optimal is 0.2 distance
-        ## Assumption: always at least one coke can
-        pos_coke=self.gu.gms_client("coke_1","").pose.position
-        pos_robot=self.gu.gms_client("robot", "").pose.position
+        reward=self.calculateReward()        
 
-        # dist=(pos_coke.x-pos_robot.x)**2+(pos_coke.y-pos_robot.y)**2
-
-        # for i in self.coke_list[1:]:
-        #     pos_coke_temp=self.gu.gms_client(i,"").pose.position
-        #     dist_temp=(pos_coke_temp.x-pos_robot.x)**2+(pos_coke_temp.y-pos_robot.y)**2
-        #     if dist_temp<dist:
-        #         dist=dist_temp
-        #         pos_coke=pos_coke_temp
-        
-        reward_observe=float(np.sum(image_coke>0))/self.state_size
-        if reward_observe==0:
-            reward=-1
-        else:
-            # reward_dist=1.0/((np.sqrt(dist)-0.35)**2+1e-2)
-            reward_dist=float(np.sum(image_coke==1))/self.state_size
-
-            # reward=reward_dist*reward_observe
-            reward=reward_dist
-        
-
+        #### TODO
         ## Check for collision
         terminate=0
 
-
         self.rl_agent.recordReward(reward)
-        self.total_episode_reward=self.total_episode_reward+reward
-
-        ## Add 'state decay'
-        memory_thresh=0.2
-        self.coke_box_state=self.coke_box_state*0.7
-        self.light_box_state=self.light_box_state*0.7
-        self.coke_box_state[self.coke_box_state<memory_thresh]=0
-        self.light_box_state[self.light_box_state<memory_thresh]=0
+        self.total_episode_reward+=reward
 
         ## After fixed episode length learn
         ## (should also learn if robot completes dropping off?)
@@ -293,26 +286,34 @@ class RobotRL(object):
             twist_vel.angular.z=0.0
             self.vel_pub.publish(twist_vel)
 
-            self.rl_agent.learnActor()
-            self.rl_agent.learnCritic()
-            self.rl_agent.clearHistory()
-
+            self.trainAgent()
             self.rl_agent.saveNets()
             self.episode=0
         else:
             self.episode=self.episode+1
         if self.total_eps>self.max_eps or terminate:# or grab:
-            self.total_eps=0
-            self.rl_agent.saveNets()
-            self.f.write(str(self.total_episode_reward))
-            self.f.write('\n')
-            self.f.flush()
-            self.total_episode_reward=0
-            self.coke_box_state[:]=0
-            self.light_box_state[:]=0
-            self.gu.resetWorld()
+            self.episodeEnd()
         else:
             self.total_eps=self.total_eps+1
+
+    def episodeEnd(self):
+        self.total_eps=0
+        self.episode=0
+        self.rl_agent.saveNets()
+        self.f.write(str(self.total_episode_reward))
+        self.f.write('\n')
+        self.f.flush()
+        self.total_episode_reward=0
+        self.coke_box_state[:]=0
+        self.light_box_state[:]=0
+        self.simReset()
+
+    def simReset(self):
+        # self.gu.resetWorldTest()
+        self.gu.resetWorld(self.coke_list, self.light_list)
+        self.arm.moveArmHome()
+        rospy.sleep(0.5)
+        print("World reset!")
 
     def start(self):
         while not rospy.is_shutdown():
