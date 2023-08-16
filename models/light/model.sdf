@@ -82,6 +82,11 @@
         <label>10</label>
       </plugin> -->
     </visual>
+    <sensor name='my_contact' type='contact'>
+      <contact>
+        <collision>collision</collision>
+      </contact>
+    </sensor>
   </link>
 
   <visual name="visual">
