@@ -16,6 +16,15 @@ class GazeboUtils(object):
         self.model_coordinates=rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
 
         self.init_pose=rospy.Publisher("/initialpose",geometry_msgs.msg.PoseWithCovarianceStamped, queue_size=1)
+        self.collision_detector=rospy.Subscriber('/tb3_gazebo_bumper', ContactsState, self.collisionDetector, queue_size=1)
+        self.collision=False
+        print('Gazebo utilities setup completed')
+
+    def collisionDetector(self, data):
+        if len(data.states)>0:
+            for state in data.states:
+                if 'light' in state.collision2_name or 'coke' in state.collision2_name or 'wall' in state.collision2_name:
+                    self.collision=True
 
     def gms_client(self,model_name,relative_entity_name):
         rospy.wait_for_service('/gazebo/get_model_state')

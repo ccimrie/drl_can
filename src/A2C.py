@@ -19,7 +19,7 @@ class A2C:
         # self.optimizer=keras.optimizers.Adam(lr=5e-6)
         # lr=5e-6
         # self.optimizer=keras.optimizers.legacy.Adam(learning_rate=5e-6)
-        self.optimizer=keras.optimizers.legacy.Adam(learning_rate=0.2)
+        self.optimizer=keras.optimizers.legacy.Adam(learning_rate=0.05)
         self.huber_loss = keras.losses.Huber()
         self.num_actions=_num_actions
         self.state_size=_state_size
