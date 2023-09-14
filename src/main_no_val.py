@@ -24,6 +24,7 @@ from darknet_ros_msgs.msg import BoundingBoxes
 import geometry_msgs.msg
 # import moveit_commander
 # import moveit_msgs.msg
+from sensor_msgs.msg import LaserScan
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import actionlib
@@ -60,7 +61,7 @@ class RobotRL(object):
             self.light_list.append(light)
 
         # self.state_size=20
-        self.state_size=1
+        self.state_size=2
         width=640
         height=480
 
@@ -71,6 +72,8 @@ class RobotRL(object):
 
         self.coke_box_state=np.zeros([self.height_state_size, self.width_state_size])
         self.light_box_state=np.zeros([self.height_state_size, self.width_state_size])
+
+        self.lasers=np.zeros([360])
         print("Part 1 complete")
         # Network
         ## Check if a model is already created
@@ -121,7 +124,7 @@ class RobotRL(object):
         self.state_perception_sub=rospy.Subscriber("/darknet_ros/found_object", ObjectCount, self.imageSub, queue_size=1)
         self.bounding_boxes_sub=rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.storeBoxes, queue_size=1)
 
-        self.laser_sub=rospy.Subscriber('/scan', LaserScan, self.align, queue_size=1)
+        self.laser_sub=rospy.Subscriber('/scan', LaserScan, self.laserScanStore, queue_size=1)
         print("Subscribers setup")
 
     def armUpdate(self, data):
@@ -215,11 +218,12 @@ class RobotRL(object):
         else:
             return 0
 
-    def laserScanStore(self):
-        self.laser=data.ranges
+    def laserScanStore(self,data):
+        raw_lasers=np.array(data.ranges)/3.5 ## max range of scan in metres
+        raw_lasers[np.isinf(raw_lasers)]=-1
+        self.lasers=raw_lasers.copy()
     
     def imageSub(self, data):
-        return
         # print("IMAGES")
         if self.episode%100==0:
             print(self.episode)
@@ -227,16 +231,15 @@ class RobotRL(object):
         # Get state
         image_coke=self.coke_box_state.flatten()
         image_light=self.light_box_state.flatten()
-        laser_state=self.laser/3.5 ## max range of scan in metres
+        laser_state=self.lasers
         image=np.append(image_coke,image_light)
         state=np.append(image, laser_state)
-
         # image_scaled=cv2.resize(self.coke_box_state, dsize=(640,480), interpolation=cv2.INTER_NEAREST)
         # cv2.imshow('test',image_scaled)
         # cv2.waitKey(1)
 
         ## Send state to the networks and get actions
-        act=self.rl_agent.step(image)
+        act=self.rl_agent.step(state)
 
         act[0]=np.clip(act[0],-1,1)
         act[1]=np.clip(act[1],-1,1)
@@ -326,6 +329,7 @@ class RobotRL(object):
         self.total_episode_reward=0
         self.coke_box_state[:]=0
         self.light_box_state[:]=0
+        self.gu.collision=False
         self.simReset()
 
     def simReset(self):

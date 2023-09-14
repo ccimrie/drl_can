@@ -4,7 +4,7 @@
   <arg name="paused" default="true"/>
   <arg name="use_sim_time" default="true"/>
 
-  <arg name="coke_no_init" default="5"/>
+  <arg name="coke_no_init" default="4"/>
   <arg name="light_no_init" default="3"/>
 
   <!-- Arguments -->

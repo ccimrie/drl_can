@@ -8,6 +8,8 @@ from gazebo_msgs.srv import SetModelState
 from gazebo_msgs.srv import SetLightProperties
 from std_srvs.srv import Empty
 
+from gazebo_msgs.msg import ContactsState
+
 class GazeboUtils(object):
     def __init__(self):
         ## Ros service for clearing cost maps
@@ -23,7 +25,7 @@ class GazeboUtils(object):
     def collisionDetector(self, data):
         if len(data.states)>0:
             for state in data.states:
-                if 'light' in state.collision2_name or 'coke' in state.collision2_name or 'wall' in state.collision2_name:
+                if 'light' in state.collision2_name or 'coke' in state.collision2_name or 'Wall' in state.collision2_name:
                     self.collision=True
 
     def gms_client(self,model_name,relative_entity_name):
